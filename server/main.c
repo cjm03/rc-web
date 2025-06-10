@@ -1,0 +1,106 @@
+/*
+ *  main.c
+ *  
+ *  Start the server, load metadata, and set up sockets
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+#include <sys/types.h>
+#include <stdbool.h>
+#include <dirent.h>
+
+#include "router.h"
+#include "hashtable.h"
+
+#define PORT 8080
+#define BUFFER_SIZE 4096
+
+void loadClipsFromDir(const char* directory)
+{
+    DIR* dir = opendir(directory);
+    if (!dir) {
+        perror("opendir");
+        return;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir))) {
+        if (entry->d_type == DT_REG) {
+            if (strstr(entry->d_name, ".mp4")) {
+                char id[256] = {0};
+                strncpy(id, entry->d_name, strlen(entry->d_name) - 4);
+
+                char filepath[512];
+                snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+
+                struct stat st;
+                if (stat(filepath, &st) == 0) {
+                    htClip* ins = htNewClip(id, filepath);
+                    if (htInsert(ins)) {
+                        printf("Loaded clip: %s\n", id);
+                    } else {
+                        perror("new&insert");
+                    }
+                }
+            }
+        }
+    }
+    closedir(dir);
+}
+
+int main(void)
+{
+    printf("Initializing hashtable\n");
+    initHashTable();
+    printf("Loading videos\n");
+    loadClipsFromDir("media");
+    displayHashTable();
+
+    printf("\n\n\nStarting server...\n");
+
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    addr.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        perror("bind");
+        exit(EXIT_FAILURE);
+    }
+    if (listen(server_fd, 10) != 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server running on port %d\n", PORT);
+
+    while (1) {
+        int client_fd = accept(server_fd, NULL, NULL);
+        char buffer[BUFFER_SIZE] = {0};
+        read(client_fd, buffer, BUFFER_SIZE - 1);
+        printf("Request:\n%s\n", buffer);
+        handleRequest(client_fd, buffer, htTable);
+
+        // if (strncmp(buffer, "GET / ", 5) == 0) {
+        //     serveFile(client_fd, "public/index.html");
+        // } else {
+        //     const char* response = "HTTP/1.1 404 Not Found\r\n\r\nNot Found";
+        //     write(client_fd, response, strlen(response));
+        // }
+
+        close(client_fd);
+    }
+    return 0;
+}
+
