@@ -45,12 +45,8 @@ void loadClipsFromDir(const char* directory)
 
                 struct stat st;
                 if (stat(filepath, &st) == 0) {
-                    htClip* ins = htNewClip(id, filepath);
-                    if (htInsert(ins)) {
-                        printf("Loaded clip: %s\n", id);
-                    } else {
-                        perror("new&insert");
-                    }
+                    insertClip(id, filepath, st.st_size);
+                    printf("Loaded clip: %s\n", id);
                 }
             }
         }
@@ -61,10 +57,9 @@ void loadClipsFromDir(const char* directory)
 int main(void)
 {
     printf("Initializing hashtable\n");
-    initHashTable();
+    initTable();
     printf("Loading videos\n");
     loadClipsFromDir("media");
-    displayHashTable();
 
     printf("\n\n\nStarting server...\n");
 
@@ -90,7 +85,7 @@ int main(void)
         char buffer[BUFFER_SIZE] = {0};
         read(client_fd, buffer, BUFFER_SIZE - 1);
         printf("Request:\n%s\n", buffer);
-        handleRequest(client_fd, buffer, htTable);
+        handleRequest(client_fd, buffer);
 
         // if (strncmp(buffer, "GET / ", 5) == 0) {
         //     serveFile(client_fd, "public/index.html");

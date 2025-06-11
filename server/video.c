@@ -50,16 +50,16 @@ void serveFile(int client_fd, const char* filepath)
 
 void serveVideo(int client_fd, const char* clip_id)
 {
-    htClip* clip = htSearch(clip_id);
+    Clip* clip = getClip(clip_id);
     if (!clip) {
         const char* not_found = "HTTP/1.1 404 Not Found\r\n\r\nClip not Found";
         write(client_fd, not_found, strlen(not_found));
         return;
     }
 
-    int file_fd = open(clip->value, O_RDONLY);
+    int file_fd = open(clip->filename, O_RDONLY);
     if (file_fd < 0) {
-        const char* error = "HTTP/1.1 500 Internal Server Error\r\n\r\nClip not Found";
+        const char* error = "HTTP/1.1 500 Internal Server Error\r\n\r\nFailed to open file";
         write(client_fd, error, strlen(error));
         return;
     }
@@ -67,13 +67,13 @@ void serveVideo(int client_fd, const char* clip_id)
     char header[BUFFER_SIZE];
     snprintf(header, sizeof(header),
              "HTTP/1.1 200 OK\r\n"
-             "Content-Length: FFIIXXMMEE\r\n"
+             "Content-Length: %zu\r\n"
              "Content-Type: video/mp4\r\n"
-             "Connection: close\r\n\r\n");
+             "Connection: close\r\n\r\n", clip->filesize);
     write(client_fd, header, strlen(header));
 
     off_t offset = 0;
-    off_t len = sizeof(file_fd);
+    off_t len = clip->filesize;
     if (sendfile(file_fd, client_fd, offset, &len, NULL, 0) == -1) {
         perror("sendfile");
     }

@@ -13,8 +13,24 @@
 #include "video.h"
 #include "hashtable.h"
 
+typedef struct {
+    char* json;
+    size_t offset;
+} JsonBuffer;
 
-void handleRequest(int client_fd, const char* request, htClip* ht)
+void appendClipJson(Clip* clip, void* ctx)
+{
+    JsonBuffer* buf = ctx;
+    if (buf->offset > 1) {
+        buf->json[buf->offset++] = ',';
+    }
+    int written = snprintf(buf->json + buf->offset, 8192 - buf->offset,
+                           "{\"id\":\"%s\",\"filename\":\"%s\",\"size\":%zu}",
+                           clip->id, clip->filename, clip->filesize);
+    buf->offset += written;
+}
+
+void handleRequest(int client_fd, const char* request)
 {
     if (strncmp(request, "GET /clip?", 10) == 0) {
         const char* id_param = strstr(request, "id=");
@@ -41,21 +57,12 @@ void handleRequest(int client_fd, const char* request, htClip* ht)
 
     if (strncmp(request, "GET /api/clips", 14) == 0) {
         char json[8192] = "[";
-        int first = 1;
-        for (int i = 0; i < TABLE_SIZE; i++) {
-            htClip* cur = &ht[i];
-            while (cur) {
-                if (!first)
-                    strcat(json, ",");
-                char entry[512];
-                snprintf(entry, sizeof(entry),
-                         "{\"id\":\"%s\",\"filename\":\"%s\",\"size\":\"TODOOOOO\"}",
-                         cur->key, cur->value);
-                strcat(json, entry);
-                first = 0;
-            }
-        }
-        strcat(json, "]");
+        JsonBuffer buf = { .json = json, .offset = 1 };
+
+        iterateClips(appendClipJson, &buf);
+
+        json[buf.offset++] = ']';
+        json[buf.offset] = '\0';
 
         char header[256];
         snprintf(header, sizeof(header),
@@ -63,13 +70,14 @@ void handleRequest(int client_fd, const char* request, htClip* ht)
                  "Content-Type: application/json\r\n"
                  "Content-Length: %zu\r\n"
                  "Connection: close\r\n\r\n",
-                 strlen(json));
+                 buf.offset);
 
         write(client_fd, header, strlen(header));
-        write(client_fd, json, strlen(json));
+        write(client_fd, json, buf.offset);
         return;
     }
 
     const char* not_found = "HTTP/1.1 404 Not Found\r\n\r\nNot Found";
     write(client_fd, not_found, strlen(not_found));
+    return;
 }

@@ -3,6 +3,6 @@
 
 #include "hashtable.h"
 
-void handleRequest(int client_fd, const char* request, htClip* ht);
+void handleRequest(int client_fd, const char* request);
 
 #endif

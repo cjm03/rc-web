@@ -1,3 +1,63 @@
-<html>
-    <h1>Rust Clips Server</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RUST CLIPS</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #121212;
+            color: #eee;
+            padding: 1em;
+        }
+        h1 {
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1em;
+        }
+        .clip {
+            background: #1e1e1e;
+            padding: 1em;
+            gap: 1em;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .clip p {
+            margin: 0.5em 0 0;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rust Clips</h1>
+    <div class="grid" id="clipGrid"></div>
+
+    <script>
+        async function loadClips() {
+            const res = await fetch('/api/clips');
+            const clips = await res.json();
+        
+            const grid = document.getElementById('clipGrid');
+            grid.innerHTML = "";
+
+            for (const clip of clips) {
+                const div = document.createElement('div');
+                div.className = 'clip';
+                div.innerHTML = `
+                    <video controls src="/clip?id=${clip.id}"></video>
+                    <p><strong>${clip.id}</strong><br>${(clip.size / 1048576).toFixed(2)} MB</p>
+                `;
+                grid.appendChild(div);
+            }
+        }
+        loadClips();
+    </script>
+</body>
 </html>

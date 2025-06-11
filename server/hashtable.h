@@ -5,35 +5,25 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "clip.h"
+
 #define TABLE_SIZE 10
-
-/* structures ***************************************************/
-
-typedef struct {
-    char* key;
-    char* value;
-} htClip;
-
-// typedef struct {
-//     int size;
-//     int count;
-//     htClip** clips;
-// } htTable;
 
 /* prototypes ***************************************************/
 
-unsigned long djb2(const char* s);
-void initHashTable(void);
-void displayHashTable(void);
-htClip* htNewClip(const char* id, const char* path);
-bool htInsert(htClip* c);
-htClip* htSearch(const char* id);
-htClip* htDelete(char* id);
+void initTable(void);
+void insertClip(const char* id, const char* filename, size_t filesize);
+Clip* getClip(const char* id);
+void freeTable(void);
 
-// static htClip* htNewClip(const char* id, const char* path);
-// htTable* htNewTable(void);
-// void htInsertClip(htTable* ht, const char* id, const char* path);
-// char* htSearch(htTable* ht, const char* id);
-// void htDelTable(htTable* ht);
+void iterateClips(void (*callback)(Clip* clip, void *ctx), void *ctx);
+
+// unsigned long djb2(const char* s);
+// void initHashTable(void);
+// void displayHashTable(void);
+// htClip* htNewClip(const char* id, const char* path);
+// bool htInsert(htClip* c);
+// htClip* htSearch(const char* id);
+// htClip* htDelete(char* id);
 
 #endif
