@@ -12,6 +12,7 @@
 #include "router.h"
 #include "video.h"
 #include "hashtable.h"
+#include "utils.h"
 
 typedef struct {
     char* json;
@@ -36,16 +37,21 @@ void handleRequest(int client_fd, const char* request)
         const char* id_param = strstr(request, "id=");
         printf("\nSTRSTR: %s\n", id_param);
         if (id_param) {
-            int start = 3;
-            int end = 11;
-            int length = end - start;
-            char* clip_id = malloc(length + 1);
-            strncpy(clip_id, id_param + start, length);
-            clip_id[length] = '\0';
-            printf("\nSTRNCPY: '%s'\n", clip_id);
-            // sscanf(id_param + 3, "%255[^ \r\n]", clip_id);
+
+            // int start = 3;
+            // int end = 11;
+            // int length = end - start;
+            // char* clip_id = malloc(length + 1);
+            // strncpy(clip_id, id_param + start, length);
+            // clip_id[length] = '\0';
+            // printf("\nSTRNCPY: '%s'\n", clip_id);
+
+            char clip_id[256] = {0};
+            char raw_id[256] = {0};
+            sscanf(id_param + 3, "%255[^ \r\n]", raw_id);
+            urldecode(clip_id, raw_id);
             serveVideo(client_fd, clip_id);
-            free(clip_id);
+            // free(clip_id);
             return;
         }
     }

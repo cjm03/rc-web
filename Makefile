@@ -1,6 +1,6 @@
 # Makefile
 default:
-	gcc server/main.c server/router.c server/video.c server/hashtable.c -o rcw -Wall -Wextra -pedantic -std=c99
+	gcc server/main.c server/router.c server/video.c server/hashtable.c server/utils.c -o rcw -Wall -Wextra -pedantic -std=c99
 # CC=gcc
 # CFLAGS=-Wall -Wextra -O2
 #

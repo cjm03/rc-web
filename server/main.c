@@ -25,6 +25,7 @@
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
+/* Function to gather clips and place them in the hash table */
 void loadClipsFromDir(const char* directory)
 {
     DIR* dir = opendir(directory);
@@ -38,7 +39,8 @@ void loadClipsFromDir(const char* directory)
         if (entry->d_type == DT_REG) {
             if (strstr(entry->d_name, ".mp4")) {
                 char id[256] = {0};
-                strncpy(id, entry->d_name, strlen(entry->d_name) - 4);
+                snprintf(id, sizeof(id), "%.*s", (int)(strlen(entry->d_name) - 4), entry->d_name);
+                // strncpy(id, entry->d_name, strlen(entry->d_name) - 4);
 
                 char filepath[512];
                 snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
@@ -56,6 +58,7 @@ void loadClipsFromDir(const char* directory)
 
 int main(void)
 {
+    /* Initialize and fill hash table */
     printf("Initializing hashtable\n");
     initTable();
     printf("Loading videos\n");
@@ -63,12 +66,12 @@ int main(void)
 
     printf("\n\n\nStarting server...\n");
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    /* Start server */
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0); // assigns server_fd with a file descriptor referring to the endpoint created by socket()
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
-    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr); // converts 127.0.0.1 into binary network address structure then copies it into addr.sin_addr 
     addr.sin_port = htons(PORT);
-
     if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         perror("bind");
         exit(EXIT_FAILURE);
@@ -77,22 +80,17 @@ int main(void)
         perror("listen");
         exit(EXIT_FAILURE);
     }
-
+    
+    /* Server started successfully */
     printf("Server running on port %d\n", PORT);
 
+    /* Deal with client connections to server */
     while (1) {
         int client_fd = accept(server_fd, NULL, NULL);
         char buffer[BUFFER_SIZE] = {0};
         read(client_fd, buffer, BUFFER_SIZE - 1);
         printf("Request:\n%s\n", buffer);
         handleRequest(client_fd, buffer);
-
-        // if (strncmp(buffer, "GET / ", 5) == 0) {
-        //     serveFile(client_fd, "public/index.html");
-        // } else {
-        //     const char* response = "HTTP/1.1 404 Not Found\r\n\r\nNot Found";
-        //     write(client_fd, response, strlen(response));
-        // }
 
         close(client_fd);
     }
