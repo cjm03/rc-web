@@ -1,6 +1,7 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
+#include "parse.h"
 #include "hashtable.h"
 
 // typedef struct {
@@ -18,6 +19,7 @@ void appendClipJson(Clip* clip, void* ctx);
  *      GET /api/clips  
 */
 
-void handleRequest(int client_fd, const char* request);
+void handleRequest(int client_fd, struct Request* req);
+// void handleRequest(int client_fd, const char* request);
 
 #endif

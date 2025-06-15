@@ -21,6 +21,7 @@
 
 #include "router.h"
 #include "hashtable.h"
+#include "parse.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
@@ -89,11 +90,19 @@ int main(void)
     while (1) {
         int client_fd = accept(server_fd, NULL, NULL);
         char buffer[BUFFER_SIZE] = {0};
+
         read(client_fd, buffer, BUFFER_SIZE - 1);
-        printf("Request:\n%s\n", buffer);
-        handleRequest(client_fd, buffer);
+
+        struct Request* req = parseRequest(buffer);
+        if (req) printf("Testing Method: %d\n", req->method);
+        handleRequest(client_fd, req);
+
+        // printf("Request:\n%s\n", buffer);
+
+        // handleRequest(client_fd, buffer);
 
         close(client_fd);
+        freeRequest(req);
     }
     return 0;
 }

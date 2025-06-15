@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #include "video.h"
 #include "hashtable.h"
@@ -43,9 +44,16 @@ void serveFile(int client_fd, const char* filepath)
     off_t offset = 0;
     off_t len = st.st_size;
     if (sendfile(file_fd, client_fd, offset, &len, NULL, 0) == -1) {
-        perror("sendfile");
+        if (errno == EPIPE || errno == ECONNRESET) {
+            printf("sendfile ok");
+        } else {
+            printf("SFErrno %d :: %s :: filepath: %s\n", errno, strerror(errno), filepath);
+            // perror("sendfile");
+        }
     }
     close(file_fd);
+    close(client_fd);
+    return;
 }
 
 void serveVideo(int client_fd, const char* clip_id)
@@ -75,8 +83,14 @@ void serveVideo(int client_fd, const char* clip_id)
     off_t offset = 0;
     off_t len = clip->filesize;
     if (sendfile(file_fd, client_fd, offset, &len, NULL, 0) == -1) {
-        perror("sendfile");
+        if (errno == EPIPE || errno == ECONNRESET) {
+            printf("sendfile ok");
+        } else {
+            // perror("sendfile");
+            printf("SVErrno %d :: %s :: clipid: %s\n", errno, strerror(errno), clip_id);
+        }
     }
-
     close(file_fd);
+    close(client_fd);
+    return;
 }
