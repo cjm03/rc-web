@@ -39,11 +39,12 @@ void loadClipsFromDir(const char* directory)
         if (entry->d_type == DT_REG) {
             if (strstr(entry->d_name, ".mp4")) {
                 char id[256] = {0};
-                snprintf(id, sizeof(id), "%.*s", (int)(strlen(entry->d_name) - 4), entry->d_name);
-                // strncpy(id, entry->d_name, strlen(entry->d_name) - 4);
+                snprintf(id, sizeof(id), "%.*s",
+                         (int)(strlen(entry->d_name) - 4), entry->d_name);
 
                 char filepath[512];
-                snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+                snprintf(filepath, sizeof(filepath), "%s/%s",
+                         directory, entry->d_name);
 
                 struct stat st;
                 if (stat(filepath, &st) == 0) {
