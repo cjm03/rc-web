@@ -26,45 +26,16 @@
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
-/* Function to gather clips and place them in the hash table */
-void loadClipsFromDir(const char* directory)
-{
-    DIR* dir = opendir(directory);
-    if (!dir) {
-        perror("opendir");
-        return;
-    }
-
-    struct dirent* entry;
-    while ((entry = readdir(dir))) {
-        if (entry->d_type == DT_REG) {
-            if (strstr(entry->d_name, ".mp4")) {
-                char id[256] = {0};
-                snprintf(id, sizeof(id), "%.*s",
-                         (int)(strlen(entry->d_name) - 4), entry->d_name);
-
-                char filepath[512];
-                snprintf(filepath, sizeof(filepath), "%s/%s",
-                         directory, entry->d_name);
-
-                struct stat st;
-                if (stat(filepath, &st) == 0) {
-                    insertClip(id, filepath, st.st_size);
-                    printf("Loaded clip: %s\n", id);
-                }
-            }
-        }
-    }
-    closedir(dir);
-}
 
 int main(void)
 {
     /* Initialize and fill hash table */
     printf("Initializing hashtable\n");
-    initTable();
+    Table* t = createTable();
+    printf("Initialized\n");
+
     printf("Loading videos\n");
-    loadClipsFromDir("media");
+    loadClipsFromDir(t, "/data/mp4/rust");
 
     printf("\n\n\nStarting server...\n");
 
@@ -89,21 +60,22 @@ int main(void)
     /* Deal with client connections to server */
     while (1) {
         int client_fd = accept(server_fd, NULL, NULL);
-        char buffer[BUFFER_SIZE] = {0};
+        if (client_fd != -1) {
+            char buffer[BUFFER_SIZE] = {0};
 
-        read(client_fd, buffer, BUFFER_SIZE - 1);
+            read(client_fd, buffer, BUFFER_SIZE - 1);
 
-        struct Request* req = parseRequest(buffer);
-        if (req) printf("Testing Method: %d\n", req->method);
-        handleRequest(client_fd, req);
-
-        // printf("Request:\n%s\n", buffer);
-
-        // handleRequest(client_fd, buffer);
-
-        close(client_fd);
-        freeRequest(req);
+            struct Request* req = parseRequest(buffer);
+            printf("Handling\n");
+            handleRequest(t, client_fd, req);
+            printf("Handled\n");
+            close(client_fd);
+            printf("Closed client_fd\n");
+            freeRequest(req);
+            printf("Freed req\n");
+        }
     }
+    freeTable(t);
     return 0;
 }
 

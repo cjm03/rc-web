@@ -6,11 +6,6 @@
 
 #include "parse.h"
 
-#define MAXLINELEN 256
-#define MAXHDRLEN 256
-#define PAIR 2
-#define MAXHDRCOUNT 50
-#define MAXBUF 4096
 
 
 Request* parseRequest(const char* req_in)

@@ -11,12 +11,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/sendfile.h>
 #include <sys/uio.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "video.h"
 #include "hashtable.h"
+#include "respheaders.h"
 
 #define BUFFER_SIZE 4096
 
@@ -24,8 +27,7 @@ void serveFile(int client_fd, const char* filepath)
 {
     int file_fd = open(filepath, O_RDONLY);
     if (file_fd < 0) {
-        const char* not_found = "HTTP/1.1 404 Not Found\r\n\r\nFile Not Found";
-        write(client_fd, not_found, strlen(not_found));
+        write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
 
@@ -33,22 +35,17 @@ void serveFile(int client_fd, const char* filepath)
     fstat(file_fd, &st);
 
     char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header),
-             "HTTP/1.1 200 OK\r\n"
-             "Content-Length: %lld\r\n"
-             "Content-Type: text/html\r\n"
-             "Connection: close\r\n\r\n", (long long)st.st_size);
+    snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
 
     write(client_fd, header, strlen(header));
 
     off_t offset = 0;
     off_t len = st.st_size;
-    if (sendfile(file_fd, client_fd, offset, &len, NULL, 0) == -1) {
+    if (sendfile(client_fd, file_fd, &offset, len) == -1) {
         if (errno == EPIPE || errno == ECONNRESET) {
             printf("sendfile ok");
         } else {
             printf("SFErrno %d :: %s :: filepath: %s\n", errno, strerror(errno), filepath);
-            // perror("sendfile");
         }
     }
     close(file_fd);
@@ -56,41 +53,109 @@ void serveFile(int client_fd, const char* filepath)
     return;
 }
 
-void serveVideo(int client_fd, const char* clip_id)
+void serveClipPage(int client_fd, const char* clip_id)
 {
-    Clip* clip = getClip(clip_id);
+    char vidurl[256];
+    snprintf(vidurl, sizeof(vidurl), "/clip?id=%s", clip_id);
+
+    char html[4096];
+    snprintf(html, sizeof(html),
+             "<!DOCTYPE html>"
+             "<html lang='en'>"
+             "<head>"
+             "<meta charset='UTF-8'>"
+             "<title>Clip Viewer</title>"
+             "<style>"
+             "body { font-family: sans-serif; background: #121212; color: #eee; padding: 1em; }"
+             "nav { background-color: #333; color: white; }"
+             "nav a { color: white; text-decoration: none; }"
+             ".container { display: flex; justify-content: center; align-items: center; padding: 2rem; }"
+             "video { width: 100%%; height: auto; border: 2px solid #ccc; border-radius: 8px; }"
+             "</style>"
+             "</head>"
+             "<body>"
+             "<nav><a href='/'>Home</a></nav>"
+             "<h1>Now Playing</h1>"
+             "<div class='container'>"
+             "<video controls autoplay>"
+             "<source src='%s' type='video/mp4'>"
+             "Your browser does not support the video tag."
+             "</video>"
+             "</div>"
+             "</body></html>", vidurl);
+
+    size_t bodylen = strlen(html);
+
+    char header[512];
+    snprintf(header, sizeof(header),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "Connection: keep-alive\r\n\r\n", bodylen);
+
+    write(client_fd, header, strlen(header));
+    write(client_fd, html, bodylen);
+    close(client_fd);
+}
+
+void serveVideo(Table* t, int client_fd, const char* clip_id, const char* range)
+{
+    Item* clip = getItem(t, clip_id);
     if (!clip) {
-        const char* not_found = "HTTP/1.1 404 Not Found\r\n\r\nClip not Found";
-        write(client_fd, not_found, strlen(not_found));
+        write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
 
-    int file_fd = open(clip->filename, O_RDONLY);
+    int file_fd = open(clip->path, O_RDONLY);
     if (file_fd < 0) {
-        const char* error = "HTTP/1.1 500 Internal Server Error\r\n\r\nFailed to open file";
-        write(client_fd, error, strlen(error));
+        write(client_fd, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
         return;
     }
+
+    struct stat st;
+    if (fstat(file_fd, &st) < 0) {
+        perror("fstat");
+        close(file_fd);
+        return;
+    }
+    off_t filesize = st.st_size;
+    off_t start = 0;
+    off_t end = filesize - 1;
+
+    if (range && strncmp(range, "bytes=", 6) == 0) {
+        sscanf(range + 6, "%ld-%ld", &start, &end);
+        if (end == 0 || end >= filesize) end = filesize - 1;
+    }
+    off_t contentlength = end - start + 1;
+    lseek(file_fd, start, SEEK_SET);
 
     char header[BUFFER_SIZE];
     snprintf(header, sizeof(header),
-             "HTTP/1.1 200 OK\r\n"
-             "Content-Length: %zu\r\n"
+             "HTTP/1.1 206 Partial Content\r\n"
              "Content-Type: video/mp4\r\n"
-             "Connection: close\r\n\r\n", clip->filesize);
+             "Content-Length: %ld\r\n"
+             "Content-Range: bytes %ld-%ld/%ld\r\n"
+             "Accept-Ranges: bytes\r\n"
+             "Connection: close\r\n\r\n",
+             contentlength, start, end, filesize);
+    // snprintf(header, sizeof(header), VID_OK, clip->size);
+    // printf("Header for clip: %s\n%s\n", clip->id, header);
+    // printf("clip->size: %zu | st.st_size: %ld\n", clip->size, st.st_size);
     write(client_fd, header, strlen(header));
 
-    off_t offset = 0;
-    off_t len = clip->filesize;
-    if (sendfile(file_fd, client_fd, offset, &len, NULL, 0) == -1) {
-        if (errno == EPIPE || errno == ECONNRESET) {
-            printf("sendfile ok");
-        } else {
-            // perror("sendfile");
-            printf("SVErrno %d :: %s :: clipid: %s\n", errno, strerror(errno), clip_id);
-        }
+    signal(SIGPIPE, SIG_IGN);
+
+    char buffer[8192];
+    off_t remaining = contentlength;
+    ssize_t n;
+    while (remaining > 0 && (n = read(file_fd, buffer, sizeof(buffer))) > 0) {
+        if (n > remaining) n = remaining;
+        if (write(client_fd, buffer, n) != n) break;
+        remaining -= n;
     }
+
     close(file_fd);
+    fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);
     close(client_fd);
     return;
 }
