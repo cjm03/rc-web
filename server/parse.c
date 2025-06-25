@@ -1,3 +1,10 @@
+/*
+ *  parse.c
+ *  HTTP request parser
+ *  Stores request data in a struct Request. 
+ *  Request holds the method, the URI (url), the version, the body, and the headers:
+ *      The headers are stored in a struct Header holding the header name, associated value, and a pointer to the next header.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +13,42 @@
 
 #include "parse.h"
 
+//===============================================================================================================
+// functions to get specific headers or their values.
+//===============================================================================================================
 
+Header* getHeaderItem(Request* req, const char* header)
+{
+    struct Header* cur = req->headers;
+    while (cur != NULL) {
+        if (strncmp(cur->name, header, strlen(header)) == 0) {
+            return cur;
+        } else {
+            cur = cur->next;
+        }
+    }
+    return NULL;
+}
+
+const char* getHeaderValue(Request* req, const char* header)
+{
+    char* value = NULL;
+    struct Header* cur = req->headers;
+    while (cur != NULL) {
+        if (strncmp(cur->name, header, strlen(header)) == 0) {
+            value = strdup(cur->value);
+            return value;
+        } else {
+            cur = cur->next;
+        }
+    }
+    return NULL;
+
+}
+
+//===========================================================================================================
+// The Parser.
+//===========================================================================================================
 
 Request* parseRequest(const char* req_in)
 {
@@ -103,6 +145,10 @@ Request* parseRequest(const char* req_in)
 
     return req;
 }
+
+//===================================================================================================================
+// free
+//===================================================================================================================
 
 void freeHeader(struct Header* h)
 {

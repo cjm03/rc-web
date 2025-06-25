@@ -21,9 +21,34 @@ typedef struct Request {
     char* body;
 } Request;
 
+//===========================================
+// get functions
+//===========================================
 
+/* takes in the request to search and the header to search for */
+/* Return: the header struct with the matching header */
+Header* getHeaderItem(Request* req, const char* header);
+
+/* same as above but returns just the header value */
+const char* getHeaderValue(Request* req, const char* header);
+
+//===========================================
+// The parser
+//===========================================
+
+/* takes in the buffer containing the request to parse */
+/* first obtains the method, then the URI, then the version, then parses all the headers */
 Request* parseRequest(const char* req_in);
+
+//===========================================
+// free
+//===========================================
+
+/* takes in the header struct to free */
 void freeHeader(struct Header *h);
+
+/* takes in the request struct to free */
+/* first frees all headers, then frees the request struct */
 void freeRequest(struct Request* req);
 
 #endif

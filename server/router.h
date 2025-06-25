@@ -4,7 +4,14 @@
 #include "parse.h"
 #include "hashtable.h"
 
-void handleRequest(Table* t, int client_fd, struct Request* req);
+//=============================
+// functions
+//=============================
+
+/* appends clip information in json format to buffer */
 void appendClipJson(Item* item, void* ctx);
 
-#endif
+/* handles request from the URI passed into it. also takes in the table and client socket descriptor */
+void handleRequest(Table* t, int client_fd, struct Request* req);
+
+#endif // ROUTER_H

@@ -1,8 +1,7 @@
-/*
- *  hashtable.c
- *
- *  Store video metadata for fast lookup
-*/
+//===========================================================================================================================================
+//  hashtable.c
+//  Store video metadata for fast lookup
+//===========================================================================================================================================
 
 #include <stdio.h>
 #include <time.h>
@@ -17,7 +16,15 @@
 #include "hashtable.h"
 #include "prime.h"
 
+//===========================================================================================================================================
+// deleted hashtable items
+//===========================================================================================================================================
+
 static Item DELETEDITEM = {NULL, NULL, 0, NULL};
+
+//===========================================================================================================================================
+// hash functions
+//===========================================================================================================================================
 
 int hash(const char* id)
 {
@@ -48,17 +55,13 @@ int htGetHash(const char* s, const int items, const int attempt)
     return (hasha + (attempt * (hashb + 1))) % items;
 }
 
+//===========================================================================================================================================
+// creation/allocation functions
+//===========================================================================================================================================
+
 Table* createTable(void)
 {
     return createTableSized(INITBASESIZE);
-
-    // Table* t = malloc(sizeof(Table));
-    // if (t != NULL) {
-    //     t->size = 53;
-    //     t->count = 0;
-    //     memset(t->items, 0, sizeof(t->items));
-    // }
-    // return t;
 }
 
 Table* createTableSized(const int base)
@@ -72,11 +75,22 @@ Table* createTableSized(const int base)
     return t;
 }
 
+Item* createItem(const char* id, const char* path, size_t size)
+{
+    Item* i = malloc(sizeof(Item));
+    i->id = strdup(id);
+    i->path = strdup(path);
+    i->size = size;
+    return i;
+}
+
+//===========================================================================================================================================
+// resizing functions
+//===========================================================================================================================================
+
 void htResize(Table* t, const int base)
 {
-    if (base < INITBASESIZE) {
-        return;
-    }
+    if (base < INITBASESIZE) return;
     Table* new = createTableSized(base);
     for (int i = 0; i < t->size; i++) {
         Item* item = t->items[i];
@@ -110,14 +124,9 @@ void htResizeDown(Table* t)
     htResize(t, newsize);
 }
 
-Item* createItem(const char* id, const char* path, size_t size)
-{
-    Item* i = malloc(sizeof(Item));
-    i->id = strdup(id);
-    i->path = strdup(path);
-    i->size = size;
-    return i;
-}
+//===========================================================================================================================================
+// insertion/navigation functions
+//===========================================================================================================================================
 
 void insertItem(Table* t, const char* id, const char* path, size_t size)
 {
@@ -146,20 +155,6 @@ void insertItem(Table* t, const char* id, const char* path, size_t size)
     t->items[index] = new;
     t->count++;
 }
-
-// void insertItem(Table* t, const char* id, const char* path, size_t size)
-// {
-//     int index = hash(id);
-//     Item* new = malloc(sizeof(Item));
-//     if (new != NULL) {
-//         new->id = strdup(id);
-//         new->path = strdup(path);
-//         new->size = size;
-//         new->next = t->items[index];
-//         t->items[index] = new;
-//     }
-//     printf("Index: %d\n", index);
-// }
 
 Item* getItem(Table* t, const char* id)
 {
@@ -196,6 +191,10 @@ char* htSearch(Table* t, const char* id)
     }
     return NULL;
 }
+
+//===========================================================================================================================================
+// removal functions
+//===========================================================================================================================================
 
 void htDelete(Table* t, const char* id)
 {
@@ -238,6 +237,10 @@ void freeTable(Table* t)
     free(t->items);
     free(t);
 }
+
+//===========================================================================================================================================
+// printTable - Shittily output the contents of the hash table
+//===========================================================================================================================================
 
 void printTable(Table* t)
 {

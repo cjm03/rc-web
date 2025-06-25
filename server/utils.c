@@ -4,10 +4,15 @@
  *  utility functions
 */
 
+//==================
+// include
+//==================
+
 #include <ctype.h>
 
 #include "utils.h"
 
+/* decodes a string with url encoding */
 void urldecode(char* dest, const char* source) {
     char a, b;
     while (*source) {

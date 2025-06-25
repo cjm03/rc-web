@@ -1,6 +1,5 @@
 /*
  *  video.c
- *  
  *  Load video metadata and serve video files
 */
 
@@ -21,7 +20,15 @@
 #include "hashtable.h"
 #include "respheaders.h"
 
+//==========================================================================================================
+// define
+//==========================================================================================================
+
 #define BUFFER_SIZE 4096
+
+//==========================================================================================================
+// functions
+//==========================================================================================================
 
 void serveFile(int client_fd, const char* filepath)
 {
@@ -30,7 +37,10 @@ void serveFile(int client_fd, const char* filepath)
         write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
-
+    //======================================================================================================
+    // Perform shakedown on the file. 404 if DNE. Get trustworthy info from the system like filesize.
+    // Now, content length might be accurate. sendfile() is still retarded
+    //======================================================================================================
     struct stat st;
     fstat(file_fd, &st);
 
@@ -86,6 +96,11 @@ void serveClipPage(int client_fd, const char* clip_id)
 
     size_t bodylen = strlen(html);
 
+    //======================================================================================================
+    // Bad code actually horrendous
+    // should fix...
+    //======================================================================================================
+
     char header[512];
     snprintf(header, sizeof(header),
              "HTTP/1.1 200 OK\r\n"
@@ -99,19 +114,22 @@ void serveClipPage(int client_fd, const char* clip_id)
 }
 
 void serveVideo(Table* t, int client_fd, const char* clip_id, const char* range)
-{
+{ // Devil function. Biggest hassle.
+    /* Consult hash table for verification */
     Item* clip = getItem(t, clip_id);
     if (!clip) {
         write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
 
+    /* Consult disk for second verification */
     int file_fd = open(clip->path, O_RDONLY);
     if (file_fd < 0) {
         write(client_fd, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
         return;
     }
 
+    /* Consult kernel for third verification */
     struct stat st;
     if (fstat(file_fd, &st) < 0) {
         perror("fstat");
@@ -119,8 +137,8 @@ void serveVideo(Table* t, int client_fd, const char* clip_id, const char* range)
         return;
     }
     off_t filesize = st.st_size;
-    off_t start = 0;
-    off_t end = filesize - 1;
+    off_t start = 0;            /* range min */
+    off_t end = filesize - 1;   /* range max */
 
     if (range && strncmp(range, "bytes=", 6) == 0) {
         sscanf(range + 6, "%ld-%ld", &start, &end);
