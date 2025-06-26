@@ -9,7 +9,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -21,14 +20,16 @@
 #include "parse.h"
 #include "respheaders.h"
 
+static int dont_remake_json = 1;
+
 //==========================================================================================================
 // Structs
 //==========================================================================================================
 
-typedef struct {
-    char* json;
-    size_t offset;
-} JsonBuffer;
+// typedef struct {
+//     char* json;
+//     size_t offset;
+// } JsonBuffer;
 
 //==========================================================================================================
 // Functions
@@ -45,6 +46,19 @@ void appendClipJson(Item* item, void* ctx)
                            "{\"id\":\"%s\",\"filename\":\"%s\",\"size\":%zu}",
                            item->id, item->path, item->size);
     buf->offset += written;
+}
+
+JsonBuffer bufJson(Table* t)
+{
+    char json[16384] = "[";
+    JsonBuffer buf = { .json = json, .offset = 1 };
+
+    iterateClips(t, appendClipJson, &buf);
+
+    json[buf.offset++] = ']';
+    json[buf.offset] = '\0';
+
+    return buf;
 }
 
 //==========================================================================================================
@@ -114,25 +128,51 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
            and/or desirable information stored in the hash table */
         } else if (strncmp(resource, "/api/clips", 10) == 0 && strlen(resource) == 10) {
 
-            char json[16384] = "[";
-            JsonBuffer buf = { .json = json, .offset = 1 };
+            if (dont_remake_json == 0) {
 
-            iterateClips(t, appendClipJson, &buf);
+                char json[32768] = "[";
+                JsonBuffer bufNew = { .json = json, .offset = 1 };
 
-            json[buf.offset++] = ']';
-            json[buf.offset] = '\0';
+                iterateClips(t, appendClipJson, &bufNew);
 
-            char header[256];
-            snprintf(header, sizeof(header), APP_OK, buf.offset);
+                json[bufNew.offset++] = ']';
+                json[bufNew.offset] = '\0';
 
-            write(client_fd, header, strlen(header));
-            write(client_fd, json, buf.offset);
+                char header[256];
+                snprintf(header, sizeof(header), APP_OK, bufNew.offset);
 
-            close(client_fd);
+                write(client_fd, header, strlen(header));
+                write(client_fd, json, bufNew.offset);
 
-            // int f = open("clipslocal.json", O_WRONLY, 0644);
-            // write(f, json, buf.offset);
-            // close(f);
+                close(client_fd);
+
+                int f = open("clipslocal.json", O_WRONLY, 0644);
+                write(f, bufNew.json, bufNew.offset);
+                close(f);
+
+                dont_remake_json = 1;
+                printf("No longer regenerating json\n");
+
+            } else {
+
+                printf("Using already-generated json\n");
+                serveFile(client_fd, "clipslocal.json");
+
+                // char header[256];
+                // char jsonLocal[16384];
+                //
+                // int fr = open("clipslocal.json", O_RDONLY);
+                // read(fr, jsonLocal, sizeof(jsonLocal));
+                // close(fr);
+                //
+                // snprintf(header, sizeof(header), APP_OK, sizeof(jsonLocal));
+                //
+                // write(client_fd, header, strlen(jsonLocal));
+                // write(client_fd, jsonLocal, strlen(jsonLocal));
+
+                close(client_fd);
+
+            }
 
             return;
 

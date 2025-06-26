@@ -4,12 +4,11 @@
  *  Start the server, load metadata, and set up sockets
 */
 
+#include <asm-generic/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <netinet/in.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
@@ -26,49 +25,62 @@
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
-
 int main(void)
 {
     /* Initialize and fill hash table */
     printf("Initializing hashtable\n");
     Table* t = createTable();
     printf("Initialized\n");
-
     printf("Loading videos\n");
     loadClipsFromDir(t, "/data/mp4/rust");
     printf("Loaded\n");
 
-
     /* Start server */
-    printf("\n\n\nStarting server...\n");
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0); // assigns server_fd with a file descriptor referring to the endpoint created by socket()
-    struct sockaddr_in addr = {0};
+    printf("\nStarting server...\n");
+    struct sockaddr_in addr, cliaddr;
+    const int enable = 1;
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) perror("setsockopt REUSEADDR");
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) perror("setsockopt REUSEPORT");
+
     addr.sin_family = AF_INET;
-    inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr); // converts 127.0.0.1 into binary network address structure then copies it into addr.sin_addr 
+    inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr);
     addr.sin_port = htons(PORT);
 
-    /* Bind */
     if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         perror("bind");
         exit(EXIT_FAILURE);
     }
-    /* Listen */
+
     if (listen(server_fd, 10) != 0) {
         perror("listen");
         exit(EXIT_FAILURE);
     }
-    
-    /* Server started successfully */
-    printf("Server running on port %d\n", PORT);
+
+    printf("Server started successfully\n");
+    printf("\tRunning on port %d\n", PORT);
+
+    socklen_t clilen = sizeof(cliaddr);
 
     /* Deal with client connections to server */
     while (1) {
 
         /* accept a connection */
-        int client_fd = accept(server_fd, NULL, NULL);
+        int client_fd = accept(server_fd, (struct sockaddr*)&cliaddr, &clilen);
+        if (client_fd < 0) perror("accept");
 
-        /* if accepted: */
-        if (client_fd != -1) {
+        /* gather client IP */
+        char clientip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);
+        printf("New connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
+
+        if (fork() == 0) {
+
+            close(server_fd);
 
             char buffer[BUFFER_SIZE] = {0};
 
@@ -79,17 +91,24 @@ int main(void)
             struct Request* req = parseRequest(buffer);
 
             /* Handle that thang */
-            printf("Handling\n");
+            printf("\nHandling\n");
             handleRequest(t, client_fd, req);
             printf("Handled\n");
 
             /* Say bye */
             close(client_fd);
-            printf("Closed client_fd\n");
+            printf("\nclose: Closed client_fd\n");
 
             /* Release */
             freeRequest(req);
-            printf("Freed req\n");
+            printf("\nfreeRequest: Freed req\n");
+
+            exit(0);
+
+        } else {
+
+            close(client_fd);
+
         }
     }
     freeTable(t);
