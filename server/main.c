@@ -17,12 +17,15 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <stdarg.h>
 
 #include "router.h"
 #include "hashtable.h"
 #include "parse.h"
+#include "utils.h"
+#include "alccalc.h"
 
-#define PORT 8080
+#define PORT 8090
 #define BUFFER_SIZE 4096
 
 int main(void)
@@ -76,7 +79,8 @@ int main(void)
         /* gather client IP */
         char clientip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);
-        printf("New connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
+        logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
+        // printf("New connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
 
         if (fork() == 0) {
 
@@ -89,6 +93,7 @@ int main(void)
 
             /* Parse the request and store in Request structure req */
             struct Request* req = parseRequest(buffer);
+            printRequest(req);
 
             /* Handle that thang */
             printf("\nHandling\n");

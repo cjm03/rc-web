@@ -9,6 +9,10 @@
 //==================
 
 #include <ctype.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include "utils.h"
 
@@ -38,3 +42,35 @@ void urldecode(char* dest, const char* source) {
     }
     *dest = '\0';
 }
+
+
+void logIP(const char* format, ...)
+{
+    FILE* log = fopen("logs/server-ip.log", "a");
+    if (!log) return;
+
+    time_t now = time(NULL);
+    struct tm* tminfo = localtime(&now);
+    char timebuf[64] = "";
+    if (tminfo) strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tminfo);
+
+    char msg[1024];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(msg, sizeof(msg), format, args);
+//    vfprintf(log, format, args);
+    va_end(args);
+
+    size_t len = strlen(msg);
+    if (len > 0 && msg[len - 1] == '\n') {
+        msg[len - 1] = '\0';
+    }
+
+    fprintf(log, "%s [%s]\n", msg, timebuf);
+
+    fclose(log);
+}
+
+
+
+

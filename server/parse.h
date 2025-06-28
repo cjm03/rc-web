@@ -41,6 +41,12 @@ const char* getHeaderValue(Request* req, const char* header);
 Request* parseRequest(const char* req_in);
 
 //===========================================
+// printer
+//===========================================
+
+void printRequest(Request* req);
+
+//===========================================
 // free
 //===========================================
 

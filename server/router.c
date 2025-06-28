@@ -8,6 +8,7 @@
 //==========================================================================================================
 
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -19,6 +20,7 @@
 #include "utils.h"
 #include "parse.h"
 #include "respheaders.h"
+#include "alccalc.h"
 
 static int dont_remake_json = 1;
 
@@ -77,6 +79,7 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
     if (req->method == GET) {
 
         const char* resource = req->url;
+        printf("REQUEST URL: %s\n", resource);
 
         /* Specific clip */
         if (strncmp(resource, "/clip?id=", 9) == 0) {
@@ -158,22 +161,15 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 printf("Using already-generated json\n");
                 serveFile(client_fd, "clipslocal.json");
 
-                // char header[256];
-                // char jsonLocal[16384];
-                //
-                // int fr = open("clipslocal.json", O_RDONLY);
-                // read(fr, jsonLocal, sizeof(jsonLocal));
-                // close(fr);
-                //
-                // snprintf(header, sizeof(header), APP_OK, sizeof(jsonLocal));
-                //
-                // write(client_fd, header, strlen(jsonLocal));
-                // write(client_fd, jsonLocal, strlen(jsonLocal));
-
                 close(client_fd);
 
             }
 
+            return;
+
+        } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
+
+            serveFile(client_fd, "public/alccalc.html");
             return;
 
         } else {
@@ -185,6 +181,47 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
             close(client_fd);
 
             return;
+        }
+    } else if (req->method == POST) {
+
+        const char* resource = req->url;
+        printf("POST REQ: %s\n", resource);
+
+        if (strncmp(resource, "/discount", 9) == 0) {
+
+            char* posted = req->body;
+            char resp = calcDisc(posted);
+            // float prices[ITEMS];
+            // char* data = strdup(&resp);
+            // if (!data) return;
+            //
+            // char* pair = strtok(data, "&");
+            // int i = 0;
+            //
+            // while (pair != NULL && i < ITEMS) {
+            //     char* equals = strchr(pair, '=');
+            //     if (equals != NULL) {
+            //         float val = atof(equals + 1);
+            //         prices[i++] = val;
+            //     }
+            //     pair = strtok(NULL, "&");
+            // }
+            // free(data);
+
+            size_t resplen = strlen(&resp);
+
+            char header[512];
+            snprintf(header, sizeof(header),
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/html\r\n"
+                "Content-Length: %zu\r\n"
+                "Connection: close\r\n\r\n", resplen);
+
+            write(client_fd, header, strlen(header));
+            write(client_fd, &resp, strlen(&resp));
+
+            close(client_fd);
+
         }
     }
     write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
