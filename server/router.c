@@ -176,16 +176,10 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
         if (strncmp(postresource, "/discount", 9) == 0) {
 
             char* posted = req->body;
-            printf("%s\n", posted);
             Discount* t = create();
-            printf("creat()ed\n");
             parseInput(t, posted);
-            printf("parsed\n");
             calcDisc(t);
-            printf("calcDisced\n");
             free(posted);
-            printf("freedPosted\n");
-            // free(toparse);
 
             Flate* f = NULL;
             flateSetFile(&f, "server/discounted.html");
