@@ -1,1 +1,6 @@
 media/
+logs/
+ipdb/IP2LOCATION-LITE-DB9.BIN
+ipdb/locatelist.txt
+ipdb/tests/
+rcw
