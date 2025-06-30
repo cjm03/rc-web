@@ -66,7 +66,7 @@ void logIP(const char* format, ...)
         msg[len - 1] = '\0';
     }
 
-    fprintf(log, "%s [%s]\n", msg, timebuf);
+    fprintf(log, "%s [%s]\n\n", msg, timebuf);
 
     fclose(log);
 }

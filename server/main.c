@@ -23,7 +23,6 @@
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
-#include "alccalc.h"
 
 #define PORT 8090
 #define BUFFER_SIZE 4096
@@ -93,7 +92,6 @@ int main(void)
 
             /* Parse the request and store in Request structure req */
             struct Request* req = parseRequest(buffer);
-            printRequest(req);
 
             /* Handle that thang */
             printf("\nHandling\n");

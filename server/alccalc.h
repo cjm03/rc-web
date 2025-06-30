@@ -4,8 +4,20 @@
 #define ITEMS 6
 #define DISCOUNT 0.15
 
-void parseInput(float prices[], char* data);
+typedef struct Discount {
+    float* orig;
+    float* disc;
+    float* newp;
+    float totaldisc;
+    float totalcost;
+} Discount;
 
-char calcDisc(const char* posted);
+void parseInput(Discount* t, char* data);
+
+Discount* create(void);
+
+void calcDisc(Discount* t);
+
+void freeDisc(Discount* t);
 
 #endif // ALCCALC_H

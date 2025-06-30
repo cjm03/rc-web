@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/sendfile.h>
 #include <fcntl.h>
 
 #include "router.h"
@@ -21,17 +23,9 @@
 #include "parse.h"
 #include "respheaders.h"
 #include "alccalc.h"
+#include "../libflate/flate.h"
 
 static int dont_remake_json = 1;
-
-//==========================================================================================================
-// Structs
-//==========================================================================================================
-
-// typedef struct {
-//     char* json;
-//     size_t offset;
-// } JsonBuffer;
 
 //==========================================================================================================
 // Functions
@@ -69,23 +63,22 @@ JsonBuffer bufJson(Table* t)
 
 void handleRequest(Table* t, int client_fd, struct Request* req)
 {
-    //======================================================
-    // Logic to obtain the request's range header
-    //======================================================
+    // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
+
     //======================================================
     // Handle GET
     //======================================================
     if (req->method == GET) {
 
         const char* resource = req->url;
-        printf("REQUEST URL: %s\n", resource);
 
         /* Specific clip */
         if (strncmp(resource, "/clip?id=", 9) == 0) {
 
-            const char* idparam = strstr(resource, "id=");
             /* Here, were stripping the first three characters (id=) from the URI because their filenames lack them */
+            const char* idparam = strstr(resource, "id=");
+
             if (idparam) {
 
                 char clip_id[256];
@@ -116,11 +109,6 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 serveClipPage(client_fd, clipid);
                 return;
             }
-        /* Not useful. Already store it in index.html, the only file using it. May need later */
-        } else if (strncmp(resource, "/public/style.css", 17) == 0) {
-
-            serveFile(client_fd, "public/style.css");
-            return;
 
         } else if (strncmp(resource, "/", 1) == 0 && strlen(resource) == 1) {
 
@@ -132,6 +120,7 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
         } else if (strncmp(resource, "/api/clips", 10) == 0 && strlen(resource) == 10) {
 
             if (dont_remake_json == 0) {
+                printf("WARN: json is being regenerated...\n");
 
                 char json[32768] = "[";
                 JsonBuffer bufNew = { .json = json, .offset = 1 };
@@ -154,11 +143,9 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 close(f);
 
                 dont_remake_json = 1;
-                printf("No longer regenerating json\n");
 
             } else {
 
-                printf("Using already-generated json\n");
                 serveFile(client_fd, "clipslocal.json");
 
                 close(client_fd);
@@ -184,46 +171,76 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
         }
     } else if (req->method == POST) {
 
-        const char* resource = req->url;
-        printf("POST REQ: %s\n", resource);
+        const char* postresource = req->url;
 
-        if (strncmp(resource, "/discount", 9) == 0) {
+        if (strncmp(postresource, "/discount", 9) == 0) {
 
             char* posted = req->body;
-            char resp = calcDisc(posted);
-            // float prices[ITEMS];
-            // char* data = strdup(&resp);
-            // if (!data) return;
-            //
-            // char* pair = strtok(data, "&");
-            // int i = 0;
-            //
-            // while (pair != NULL && i < ITEMS) {
-            //     char* equals = strchr(pair, '=');
-            //     if (equals != NULL) {
-            //         float val = atof(equals + 1);
-            //         prices[i++] = val;
-            //     }
-            //     pair = strtok(NULL, "&");
-            // }
-            // free(data);
+            printf("%s\n", posted);
+            Discount* t = create();
+            printf("creat()ed\n");
+            parseInput(t, posted);
+            printf("parsed\n");
+            calcDisc(t);
+            printf("calcDisced\n");
+            free(posted);
+            printf("freedPosted\n");
+            // free(toparse);
 
-            size_t resplen = strlen(&resp);
+            Flate* f = NULL;
+            flateSetFile(&f, "server/discounted.html");
 
+            for (int k = 0; k < ITEMS; k++) {
+
+                char* temp1 = malloc(16);
+                char* temp2 = malloc(16);
+                char* temp3 = malloc(16);
+                if (temp1 == NULL || temp2 == NULL || temp3 == NULL) {
+                    perror("malloc\n");
+                    exit(EXIT_FAILURE);
+                }
+                snprintf(temp1, 16, "%.2f", t->orig[k]);
+                snprintf(temp2, 16, "%.2f", t->disc[k]);
+                snprintf(temp3, 16, "%.2f", t->newp[k]);
+                // printf("\n\t%s\n\t%s\n\t%s\n", temp1, temp2, temp3);
+                flateSetVar(f, "original", temp1, NULL);
+                flateSetVar(f, "discount", temp2, NULL);
+                flateSetVar(f, "new", temp3, NULL);
+                flateSetVar(f, "disc", "", NULL);
+                flateDumpTableLine(f, "disc");
+                free(temp1);
+                free(temp2);
+                free(temp3);
+            }
+            flateSetVar(f, "totaldisc", "N/A", NULL);
+            flateSetVar(f, "totalcost", "N/A", NULL);
+            char* buf = flatePage(f);
+            flateFreeMem(f);
+            free(t->orig);
+            free(t->disc);
+            free(t->newp);
+            free(t);
+            size_t len = strlen(buf);
             char header[512];
             snprintf(header, sizeof(header),
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/html\r\n"
-                "Content-Length: %zu\r\n"
-                "Connection: close\r\n\r\n", resplen);
+                    "HTTP/1.1 200 OK\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: %ld\r\n"
+                    "Connection: close\r\n\r\n",
+                    len);
 
             write(client_fd, header, strlen(header));
-            write(client_fd, &resp, strlen(&resp));
+            write(client_fd, buf, len);
 
+            // FILE* ffd = fmemopen(buf, sizeof(buf), "r");
+            // struct stat st;
+            // fstat(ffd, &stat);
+
+            free(buf);
             close(client_fd);
-
         }
+    } else {
+        write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
+        return;
     }
-    write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
-    return;
 }

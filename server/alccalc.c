@@ -1,81 +1,58 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "alccalc.h"
 
 
-void parseInput(float prices[], char* data)
+void parseInput(Discount* t, char* data)
 {
-    char* token = strtok(data, "&");
+    size_t dlen = strlen(data);
+    char copy[dlen];
+    strncpy(copy, data, dlen);
+    char* token = strtok(copy, "&");
     int i = 0;
 
     while (token != NULL && i < ITEMS) {
         char* eq = strchr(token, '=');
         if (eq) {
-            prices[i] = atof(eq + 1);
+            t->orig[i] = atof(eq + 1);
+            printf("%.2f\n", t->orig[i]);
             i++;
         }
         token = strtok(NULL, "&");
     }
+    free(token);
+    // for (int x = 0; x < 6; x++) printf("%.2f\n", t->orig[i]);
+    return;
 }
 
-char calcDisc(const char* posted)
+Discount* create(void)
 {
-    char respbuf[4096];
-    float bottles[ITEMS], discount[ITEMS], newbottles[ITEMS];
-    float totaldisc, totalcost;
+    Discount* t = malloc(sizeof(Discount));
+    t->orig = calloc(ITEMS, sizeof(float*) * 2);
+    t->disc = calloc(ITEMS, sizeof(float*) * 2);
+    t->newp = calloc(ITEMS, sizeof(float*) * 2);
+    t->totaldisc = 0.0;
+    t->totalcost = 0.0;
+    return t;
+}
 
-    char* data = strdup(posted);
-    char* token = strtok(data, "&");
-    int i = 0;
-    while (token && i < ITEMS) {
-        char* eq = strchr(token, '=');
-        if (eq) {
-            bottles[i] = atof(eq + 1);
-        }
-        token = strtok(NULL, "&");
-        i++;
+void calcDisc(Discount* t)
+{
+    for (int j = 0; j < ITEMS; j++) {
+        t->disc[j] = t->orig[j] * DISCOUNT;
+        t->newp[j] = t->orig[j] - t->disc[j];
+        t->totaldisc += t->disc[j];
+        t->totalcost += t->newp[j];
     }
+    return;
+}
 
-
-    snprintf(respbuf, sizeof(respbuf) - 1,
-        "<!DOCTYPE html>"
-        "<html lang='en'>"
-        "<head>"
-        "<meta charset='UTF-8'>"
-        "<title>Discounts</title>"
-        "</head>"
-        "<body>"
-        "<h2>Disc Calc</h2>"
-        "<table border='1'>"
-        "<tr>"
-        "<th>Item</th>"
-        "<th>Original</th>"
-        "<th>Discount</th>"
-        "<th>New Price</th>"
-        "</tr>");
-
-
-    for (int i = 0; i < ITEMS; i++) {
-        discount[i] = bottles[i] * DISCOUNT;
-        newbottles[i] = bottles[i] - discount[i];
-        totaldisc += discount[i];
-        totalcost += newbottles[i];
-
-        char row[256];
-        snprintf(row, sizeof(row),
-            "<tr><td>%d</td><td>$%.2f</td><td>$%.2f</td><td>$%.2f</td></tr>",
-            i + 1, bottles[i], discount[i], newbottles[i]);
-        strcat(respbuf, row);
-    }
-    char summary[256];
-    snprintf(summary, sizeof(summary),
-        "</table><h3>Total Discount: $%.2f</h3>"
-        "<h3>Total After Discount: $%.2f</h3></body></html>",
-        totaldisc, totalcost);
-    strcat(respbuf, summary);
-
-    free(data);
-    return *respbuf;
+void freeDisc(Discount* t)
+{
+    free(t->orig);
+    free(t->disc);
+    free(t->newp);
+    free(t);
 }
