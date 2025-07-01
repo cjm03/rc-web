@@ -2,7 +2,7 @@
 //  hashtable.c
 //  Store video metadata for fast lookup
 //===========================================================================================================================================
-
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <time.h>
 #include <stddef.h>
