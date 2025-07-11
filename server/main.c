@@ -94,17 +94,17 @@ int main(void)
             struct Request* req = parseRequest(buffer);
 
             /* Handle that thang */
-            printf("\nHandling\n");
+            printf("\nHandling %s\n", req->url);
             handleRequest(t, client_fd, req);
-            printf("Handled\n");
+            printf("Handled\t");
 
             /* Say bye */
             close(client_fd);
-            printf("\nclose: Closed client_fd\n");
+            printf("Closed\t");
 
             /* Release */
             freeRequest(req);
-            printf("\nfreeRequest: Freed req\n");
+            printf("Freed\n");
 
             exit(0);
 

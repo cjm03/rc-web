@@ -7,5 +7,6 @@
 #define VID_OK "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: video/mp4\r\nConnection: close\r\n\r\n"
 #define TXT_OK "HTTP/1.1 200 OK\r\nContent-Length: %lld\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n"
 #define APP_OK "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n"
+#define ICO_OK "HTTP/1.1 200 OK\r\nContent-Length: 8224\r\nContent-Type: image/ico\r\nConnection: close\r\n\r\n"
 
 #endif // RESPHEADERS_H

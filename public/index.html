@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>RUST CLIPS</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         body {
             font-family: sans-serif;
@@ -48,9 +49,10 @@
     </style>
 </head>
 <body>
-    <!-- <nav> -->
-    <!--     <a href="/">Home</a> -->
-    <!-- </nav> -->
+    <nav>
+        <a href="/">Home</a>
+        <a href="/public/alccalc.html">Alc-Calc</a>
+    </nav>
     <h1>Rust Clips</h1>
     <div class="grid" id="clipGrid"></div>
 
@@ -67,7 +69,8 @@
                 div.className = 'clip';
                 div.innerHTML = `
                     <p><strong>${clip.id}</strong><br>${(clip.size / 1048576).toFixed(2)} MB</p>
-                    <button onclick="window.location.href='/clip?id=${encodeURIComponent(clip.id)}'">View</button>
+                    <!-- <button onclick="window.location.href='/clip?id=${encodeURIComponent(clip.id)}'">View</button> -->
+                    <button><a href="/media?id=${encodeURIComponent(clip.id)}">View</a></button>
                     <!-- <button onclick="window.location.href='/media?id=${encodeURIComponent(clip.id)}'">View</button> -->
                 `;
                 grid.appendChild(div);

@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sendfile.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 
 #include "router.h"
@@ -73,7 +74,6 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
 
         const char* resource = req->url;
 
-        /* Specific clip */
         if (strncmp(resource, "/clip?id=", 9) == 0) {
 
             /* Here, were stripping the first three characters (id=) from the URI because their filenames lack them */
@@ -97,6 +97,9 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 return;
             }
         /* Bad code, too hacky. Need to find a way to render both the html and mp4 in one route. Dont want to though */
+
+//      /MEDIA?ID=
+
         } else if (strncmp(resource, "/media?id=", 10) == 0 && strlen(resource) > 10) {
 
             const char* idparam = strstr(resource, "id=");
@@ -159,6 +162,34 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
             serveFile(client_fd, "public/alccalc.html");
             return;
 
+        } else if (strncmp(resource, "/favicon.ico", 12) == 0) {
+
+            printf("favicon\n");
+
+            int ico = open("favicon.ico", O_RDONLY);
+            if (ico < 0) {
+                printf("ico < 0\n");
+                write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
+                close(ico);
+                close(client_fd);
+                return;
+            }
+            char header[256];
+            snprintf(header, sizeof(header), ICO_OK);
+            write(client_fd, header, strlen(header));
+            char icobuf[16384];
+            ssize_t reading;
+            while ((reading = read(ico, icobuf, 16384)) > 0) {
+                if (send(client_fd, icobuf, reading, 0) < 0) {
+                    perror("send");
+                    break;
+                }
+            }
+            
+            close(ico);
+            close(client_fd);
+            return;
+
         } else {
 
             printf("%s %s\n", NOT_FOUND, resource);
@@ -182,7 +213,8 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
             free(posted);
 
             Flate* f = NULL;
-            flateSetFile(&f, "server/discounted.html");
+            // flateSetFile(&f, "server/discounted.html");
+            flateSetFile(&f, "public/discounted.html");
 
             for (int k = 0; k < ITEMS; k++) {
 
@@ -206,8 +238,14 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 free(temp2);
                 free(temp3);
             }
-            flateSetVar(f, "totaldisc", "N/A", NULL);
-            flateSetVar(f, "totalcost", "N/A", NULL);
+            char* temptotaldisc = malloc(16);
+            char* temptotalcost = malloc(16);
+            snprintf(temptotaldisc, 16, "%.2f", t->totaldisc);
+            snprintf(temptotalcost, 16, "%.2f", t->totalcost);
+            flateSetVar(f, "totaldisc", temptotaldisc, NULL);
+            flateSetVar(f, "totalcost", temptotalcost, NULL);
+            free(temptotaldisc);
+            free(temptotalcost);
             char* buf = flatePage(f);
             flateFreeMem(f);
             free(t->orig);
@@ -234,6 +272,7 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
             close(client_fd);
         }
     } else {
+        printf("%s NOT FOUND\n", req->url);
         write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
