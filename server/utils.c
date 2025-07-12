@@ -9,10 +9,14 @@
 //==================
 
 #include <ctype.h>
+#include <openssl/evp.h>
 #include <stdio.h>
 #include <time.h>
 #include <stdarg.h>
 #include <string.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 #include "utils.h"
 
@@ -69,6 +73,32 @@ void logIP(const char* format, ...)
     fprintf(log, "%s [%s]\n\n", msg, timebuf);
 
     fclose(log);
+}
+
+
+SSL_CTX* initSSLCTX(void)
+{
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    const SSL_METHOD* method = TLS_server_method();
+    SSL_CTX* ctx = SSL_CTX_new(method);
+    if (!ctx) {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+    return ctx;
+}
+
+
+void loadCerts(SSL_CTX* ctx, const char* certFile, const char* keyFile)
+{
+    if (SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM) <= 0 || 
+        SSL_CTX_use_PrivateKey_file(ctx, keyFile, SSL_FILETYPE_PEM) <= 0 || 
+        !SSL_CTX_check_private_key(ctx)) {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
 }
 
 

@@ -18,17 +18,26 @@
 #include <stdbool.h>
 #include <dirent.h>
 #include <stdarg.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 #include "router.h"
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
 
-#define PORT 8090
+// #define PORT 8090
+#define PORT 8443
+#define CERTFILE "ssl/server.crt"
+#define KEYFILE "ssl/server.key"
 #define BUFFER_SIZE 4096
 
 int main(void)
 {
+    SSL_CTX* ctx = initSSLCTX();
+    loadCerts(ctx, CERTFILE, KEYFILE);
+
     /* Initialize and fill hash table */
     printf("Initializing hashtable\n");
     Table* t = createTable();
@@ -68,18 +77,18 @@ int main(void)
 
     socklen_t clilen = sizeof(cliaddr);
 
+
     /* Deal with client connections to server */
     while (1) {
 
-        /* accept a connection */
+        /* #HTTP#  accept a connection */
         int client_fd = accept(server_fd, (struct sockaddr*)&cliaddr, &clilen);
         if (client_fd < 0) perror("accept");
 
-        /* gather client IP */
+        /* #HTTP#  gather client IP */
         char clientip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);
         logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
-        // printf("New connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
 
         if (fork() == 0) {
 
@@ -87,20 +96,39 @@ int main(void)
 
             char buffer[BUFFER_SIZE] = {0};
 
+            SSL* ssl = SSL_new(ctx);
+            SSL_set_fd(ssl, client_fd);
+
+            if (SSL_accept(ssl) <= 0) {
+                ERR_print_errors_fp(stderr);
+                close(client_fd);
+                SSL_free(ssl);
+                exit(1);
+            }
+
+            /* Read the HTTPS request into buffer */
+            SSL_read(ssl, buffer, BUFFER_SIZE - 1);
+
             /* Read the HTTP request into buffer */
-            read(client_fd, buffer, BUFFER_SIZE - 1);
+            // read(client_fd, buffer, BUFFER_SIZE - 1);
 
             /* Parse the request and store in Request structure req */
             struct Request* req = parseRequest(buffer);
 
             /* Handle that thang */
             printf("\nHandling %s\n", req->url);
-            handleRequest(t, client_fd, req);
+            handleRequest(t, ssl, req);
             printf("Handled\t");
 
-            /* Say bye */
+            /* Shutdown SSL, free SSL, close clientfd */
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
             close(client_fd);
-            printf("Closed\t");
+            printf("shutdown, free, close\t");
+
+            /* Say bye */
+            // close(client_fd);
+            // printf("Closed\t");
 
             /* Release */
             freeRequest(req);
@@ -114,6 +142,7 @@ int main(void)
 
         }
     }
+    SSL_CTX_free(ctx);
     freeTable(t);
     return 0;
 }

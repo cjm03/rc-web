@@ -16,6 +16,9 @@
 #include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 #include "router.h"
 #include "video.h"
@@ -62,7 +65,7 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-void handleRequest(Table* t, int client_fd, struct Request* req)
+void handleRequest(Table* t, SSL* ssl, struct Request* req)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
@@ -92,7 +95,7 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
 
                 printf("Serving video: %s\n", clip_id);
 
-                serveVideo(t, client_fd, clip_id, range);
+                serveVideo(t, ssl, clip_id, range);
 
                 return;
             }
@@ -109,13 +112,13 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 char rawid[256];
                 sscanf(idparam + 3, "%255[^ \r\n]", rawid);
                 urldecode(clipid, rawid);
-                serveClipPage(client_fd, clipid);
+                serveClipPage(ssl, clipid);
                 return;
             }
 
         } else if (strncmp(resource, "/", 1) == 0 && strlen(resource) == 1) {
 
-            serveFile(client_fd, "public/index.html");
+            serveFile(ssl, "public/index.html");
             return;
 
         /* Used by the function in index.html. Generates .json file displaying all the useful
@@ -136,10 +139,10 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                 char header[256];
                 snprintf(header, sizeof(header), APP_OK, bufNew.offset);
 
-                write(client_fd, header, strlen(header));
-                write(client_fd, json, bufNew.offset);
+                SSL_write(ssl, header, strlen(header));
+                SSL_write(ssl, json, bufNew.offset);
 
-                close(client_fd);
+                // SSL_free(ssl);
 
                 int f = open("clipslocal.json", O_WRONLY, 0644);
                 write(f, bufNew.json, bufNew.offset);
@@ -149,9 +152,9 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
 
             } else {
 
-                serveFile(client_fd, "clipslocal.json");
+                serveFile(ssl, "clipslocal.json");
 
-                close(client_fd);
+                // SSL_free(ssl);
 
             }
 
@@ -159,44 +162,45 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
 
         } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
 
-            serveFile(client_fd, "public/alccalc.html");
+            serveFile(ssl, "public/alccalc.html");
             return;
 
         } else if (strncmp(resource, "/favicon.ico", 12) == 0) {
 
             printf("favicon\n");
+            SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
 
-            int ico = open("favicon.ico", O_RDONLY);
-            if (ico < 0) {
-                printf("ico < 0\n");
-                write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
-                close(ico);
-                close(client_fd);
-                return;
-            }
-            char header[256];
-            snprintf(header, sizeof(header), ICO_OK);
-            write(client_fd, header, strlen(header));
-            char icobuf[16384];
-            ssize_t reading;
-            while ((reading = read(ico, icobuf, 16384)) > 0) {
-                if (send(client_fd, icobuf, reading, 0) < 0) {
-                    perror("send");
-                    break;
-                }
-            }
-            
-            close(ico);
-            close(client_fd);
+            // int ico = open("favicon.ico", O_RDONLY);
+            // if (ico < 0) {
+            //     printf("ico < 0\n");
+            //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            //     close(ico);
+            //     SSL_free(ssl);
+            //     return;
+            // }
+            // char header[256];
+            // snprintf(header, sizeof(header), ICO_OK);
+            // SSL_write(ssl, header, strlen(header));
+            // char icobuf[16384];
+            // ssize_t reading;
+            // while ((reading = read(ico, icobuf, 16384)) > 0) {
+            //     if (send(ssl, icobuf, reading, 0) < 0) {
+            //         perror("send");
+            //         break;
+            //     }
+            // }
+            //
+            // close(ico);
+            // SSL_free(ssl);
             return;
 
         } else {
 
             printf("%s %s\n", NOT_FOUND, resource);
 
-            write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
+            SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
 
-            close(client_fd);
+            // SSL_free(ssl);
 
             return;
         }
@@ -261,19 +265,19 @@ void handleRequest(Table* t, int client_fd, struct Request* req)
                     "Connection: close\r\n\r\n",
                     len);
 
-            write(client_fd, header, strlen(header));
-            write(client_fd, buf, len);
+            SSL_write(ssl, header, strlen(header));
+            SSL_write(ssl, buf, len);
 
             // FILE* ffd = fmemopen(buf, sizeof(buf), "r");
             // struct stat st;
             // fstat(ffd, &stat);
 
             free(buf);
-            close(client_fd);
+            // SSL_free(ssl);
         }
     } else {
         printf("%s NOT FOUND\n", req->url);
-        write(client_fd, NOT_FOUND, strlen(NOT_FOUND));
+        SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
         return;
     }
 }
