@@ -93,15 +93,12 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
                 /* Good. Cleansing the data. Security. */
                 urldecode(clip_id, raw_id);
 
-                printf("Serving video: %s\n", clip_id);
-
                 serveVideo(t, ssl, clip_id, range);
 
                 return;
             }
         /* Bad code, too hacky. Need to find a way to render both the html and mp4 in one route. Dont want to though */
 
-//      /MEDIA?ID=
 
         } else if (strncmp(resource, "/media?id=", 10) == 0 && strlen(resource) > 10) {
 
@@ -142,8 +139,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
                 SSL_write(ssl, header, strlen(header));
                 SSL_write(ssl, json, bufNew.offset);
 
-                // SSL_free(ssl);
-
                 int f = open("clipslocal.json", O_WRONLY, 0644);
                 write(f, bufNew.json, bufNew.offset);
                 close(f);
@@ -153,8 +148,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             } else {
 
                 serveFile(ssl, "clipslocal.json");
-
-                // SSL_free(ssl);
 
             }
 
@@ -170,28 +163,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             printf("favicon\n");
             SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
 
-            // int ico = open("favicon.ico", O_RDONLY);
-            // if (ico < 0) {
-            //     printf("ico < 0\n");
-            //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-            //     close(ico);
-            //     SSL_free(ssl);
-            //     return;
-            // }
-            // char header[256];
-            // snprintf(header, sizeof(header), ICO_OK);
-            // SSL_write(ssl, header, strlen(header));
-            // char icobuf[16384];
-            // ssize_t reading;
-            // while ((reading = read(ico, icobuf, 16384)) > 0) {
-            //     if (send(ssl, icobuf, reading, 0) < 0) {
-            //         perror("send");
-            //         break;
-            //     }
-            // }
-            //
-            // close(ico);
-            // SSL_free(ssl);
             return;
 
         } else {
@@ -199,8 +170,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             printf("%s %s\n", NOT_FOUND, resource);
 
             SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-
-            // SSL_free(ssl);
 
             return;
         }
@@ -217,11 +186,11 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             free(posted);
 
             Flate* f = NULL;
-            // flateSetFile(&f, "server/discounted.html");
             flateSetFile(&f, "public/discounted.html");
 
             for (int k = 0; k < ITEMS; k++) {
 
+                /* temps to convert float to char */
                 char* temp1 = malloc(16);
                 char* temp2 = malloc(16);
                 char* temp3 = malloc(16);
@@ -229,33 +198,51 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
                     perror("malloc\n");
                     exit(EXIT_FAILURE);
                 }
+
+                /* put rounded float value in temps */
                 snprintf(temp1, 16, "%.2f", t->orig[k]);
                 snprintf(temp2, 16, "%.2f", t->disc[k]);
                 snprintf(temp3, 16, "%.2f", t->newp[k]);
-                // printf("\n\t%s\n\t%s\n\t%s\n", temp1, temp2, temp3);
+
+                /* load temps into flate equivalent */
                 flateSetVar(f, "original", temp1, NULL);
                 flateSetVar(f, "discount", temp2, NULL);
                 flateSetVar(f, "new", temp3, NULL);
                 flateSetVar(f, "disc", "", NULL);
+
+                /* dump the flate vars */
                 flateDumpTableLine(f, "disc");
+
+                /* free temps */
                 free(temp1);
                 free(temp2);
                 free(temp3);
             }
+
+            /* temp */
             char* temptotaldisc = malloc(16);
             char* temptotalcost = malloc(16);
+
+            /* store */
             snprintf(temptotaldisc, 16, "%.2f", t->totaldisc);
             snprintf(temptotalcost, 16, "%.2f", t->totalcost);
+
+            /* load */
             flateSetVar(f, "totaldisc", temptotaldisc, NULL);
             flateSetVar(f, "totalcost", temptotalcost, NULL);
+
+            /* free */
             free(temptotaldisc);
             free(temptotalcost);
+
+            /* buffer to store filled template */
             char* buf = flatePage(f);
+
+            /* free flate and discount table */
             flateFreeMem(f);
-            free(t->orig);
-            free(t->disc);
-            free(t->newp);
-            free(t);
+            freeDisc(t);
+            
+            /* header shit */
             size_t len = strlen(buf);
             char header[512];
             snprintf(header, sizeof(header),
@@ -265,15 +252,13 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
                     "Connection: close\r\n\r\n",
                     len);
 
+            /* write */
             SSL_write(ssl, header, strlen(header));
             SSL_write(ssl, buf, len);
 
-            // FILE* ffd = fmemopen(buf, sizeof(buf), "r");
-            // struct stat st;
-            // fstat(ffd, &stat);
-
             free(buf);
-            // SSL_free(ssl);
+
+            return;
         }
     } else {
         printf("%s NOT FOUND\n", req->url);

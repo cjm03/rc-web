@@ -70,17 +70,7 @@ void serveFile(SSL* ssl, const char* filepath)
         }
     }
 
-    // off_t offset = 0;
-    // off_t len = st.st_size;
-    // if (sendfile(ssl, file_fd, &offset, len) == -1) {
-    //     if (errno == EPIPE || errno == ECONNRESET) {
-    //         printf("sendfile ok");
-    //     } else {
-    //         printf("SFErrno %d :: %s :: filepath: %s\n", errno, strerror(errno), filepath);
-    //     }
-    // }
     close(file_fd);
-    // SSL_free(ssl);
     return;
 }
 
@@ -131,7 +121,6 @@ void serveClipPage(SSL* ssl, const char* clip_id)
 
     SSL_write(ssl, header, strlen(header));
     SSL_write(ssl, html, bodylen);
-    // SSL_free(ssl);
     return;
 }
 
@@ -178,9 +167,6 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
              "Accept-Ranges: bytes\r\n"
              "Connection: close\r\n\r\n",
              contentlength, start, end, filesize);
-    // snprintf(header, sizeof(header), VID_OK, clip->size);
-    // printf("Header for clip: %s\n%s\n", clip->id, header);
-    // printf("clip->size: %zu | st.st_size: %ld\n", clip->size, st.st_size);
     SSL_write(ssl, header, strlen(header));
 
     signal(SIGPIPE, SIG_IGN);
@@ -189,24 +175,26 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
     off_t remaining = contentlength;
     off_t totalSent = 0;
     ssize_t bRead, bWrite;
+
     while (remaining > 0 && (bRead = read(file_fd, buffer, sizeof(buffer))) > 0) {
+
         ssize_t sent = 0;
+
         while (sent < bRead) {
+
             bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+
             if (bWrite <= 0) {
                 ERR_print_errors_fp(stderr);
                 break;
             }
+
             sent += bWrite;
             totalSent += bWrite;
         }
-        // if (n > remaining) n = remaining;
-        // if (SSL_write(ssl, buffer, n) != n) break;
-        // remaining -= n;
     }
 
     close(file_fd);
     fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);
-    // SSL_free(ssl);
     return;
 }
