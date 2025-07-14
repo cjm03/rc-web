@@ -17,13 +17,11 @@ void parseInput(Discount* t, char* data)
         char* eq = strchr(token, '=');
         if (eq) {
             t->orig[i] = atof(eq + 1);
-            printf("%.2f\n", t->orig[i]);
             i++;
         }
         token = strtok(NULL, "&");
     }
     free(token);
-    // for (int x = 0; x < 6; x++) printf("%.2f\n", t->orig[i]);
     return;
 }
 
@@ -51,8 +49,13 @@ void calcDisc(Discount* t)
 
 void freeDisc(Discount* t)
 {
-    free(t->orig);
-    free(t->disc);
-    free(t->newp);
+    for (int k = 0; k < ITEMS; k++) {
+        t->orig[k] = 0.0;
+        t->disc[k] = 0.0;
+        t->newp[k] = 0.0;
+    }
+    // free(t->orig);
+    // free(t->disc);
+    // free(t->newp);
     free(t);
 }

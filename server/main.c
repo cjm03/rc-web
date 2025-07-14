@@ -18,39 +18,51 @@
 #include <stdbool.h>
 #include <dirent.h>
 #include <stdarg.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 #include "router.h"
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
 
-#define PORT 8090
+// #define PORT 8090
+#define PORT 8443
 #define BUFFER_SIZE 4096
+#define CERTFILE "ssl/server.crt"
+#define KEYFILE "ssl/server.key"
 
 int main(void)
 {
-    /* Initialize and fill hash table */
-    printf("Initializing hashtable\n");
-    Table* t = createTable();
-    printf("Initialized\n");
-    printf("Loading videos\n");
-    loadClipsFromDir(t, "/data/mp4/rust");
-    printf("Loaded\n");
 
-    /* Start server */
-    printf("\nStarting server...\n");
+    /* Initialize and fill hash table */
+    Table* t = createTable();
+    loadClipsFromDir(t, "/data/mp4/rust");
+    printf("Table: loaded\n");
+
+    /* Initialize OpenSSL and SSL context */
+    SSL_CTX* ctx = initSSLCTX();
+    loadCerts(ctx, CERTFILE, KEYFILE);
+
+    /* Server essentials */
     struct sockaddr_in addr, cliaddr;
+    socklen_t clilen = sizeof(cliaddr);
     const int enable = 1;
+
+    /* Create socket */
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
+
+    /* Socket options */
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) perror("setsockopt REUSEADDR");
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) perror("setsockopt REUSEPORT");
 
     addr.sin_family = AF_INET;
-    inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(PORT);
 
     if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
@@ -63,48 +75,83 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    printf("Server started successfully\n");
-    printf("\tRunning on port %d\n", PORT);
+    printf("Server: success :|: port %d\n", PORT);
 
-    socklen_t clilen = sizeof(cliaddr);
 
     /* Deal with client connections to server */
     while (1) {
 
-        /* accept a connection */
+        /* Accept */
         int client_fd = accept(server_fd, (struct sockaddr*)&cliaddr, &clilen);
-        if (client_fd < 0) perror("accept");
+        if (client_fd < 0) {
+            perror("accept");
+            continue;
+        }
 
-        /* gather client IP */
+        /* LOG */
         char clientip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);
         logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
-        // printf("New connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
 
+        /* Concurrency */
         if (fork() == 0) {
 
             close(server_fd);
 
+            /* Gen cert */
+            SSL* ssl = SSL_new(ctx);
+            if (!ssl) {
+                fprintf(stderr, "SSL_new: failure\n");
+                close(client_fd);
+                exit(EXIT_FAILURE);
+            }
+
+            SSL_set_fd(ssl, client_fd);
+
+            /* Attempt cert accept */
+            if (SSL_accept(ssl) <= 0) {
+                ERR_print_errors_fp(stderr);
+                SSL_free(ssl);
+                close(client_fd);
+                exit(1);
+            }
+
             char buffer[BUFFER_SIZE] = {0};
 
-            /* Read the HTTP request into buffer */
-            read(client_fd, buffer, BUFFER_SIZE - 1);
+            int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
+            if (bRead <= 0) {
+                ERR_print_errors_fp(stderr);
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                close(client_fd);
+                exit(EXIT_FAILURE);
+            }
+
+            buffer[bRead] = '\0';
 
             /* Parse the request and store in Request structure req */
             struct Request* req = parseRequest(buffer);
+            if (!req) {
+                fprintf(stderr, "parser: fail\n");
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                close(client_fd);
+                exit(EXIT_FAILURE);
+            }
 
             /* Handle that thang */
-            printf("\nHandling %s\n", req->url);
-            handleRequest(t, client_fd, req);
-            printf("Handled\t");
+            handleRequest(t, ssl, req);
+            printf("[%s]: handled\n", req->url);
 
-            /* Say bye */
-            close(client_fd);
-            printf("Closed\t");
-
-            /* Release */
+            /* Free the request */
             freeRequest(req);
-            printf("Freed\n");
+            printf("req: freed\n");
+
+            /* Shutdown SSL, free SSL, close clientfd */
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            close(client_fd);
+            printf("client: closed\n");
 
             exit(0);
 
@@ -114,7 +161,11 @@ int main(void)
 
         }
     }
+
+    /* Clean */
     freeTable(t);
+    SSL_CTX_free(ctx);
+
     return 0;
 }
 
