@@ -27,7 +27,7 @@
 #include "parse.h"
 #include "respheaders.h"
 #include "alccalc.h"
-#include "../libflate/flate.h"
+#include "libflate/flate.h"
 
 static int dont_remake_json = 1;
 
@@ -139,7 +139,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
                 SSL_write(ssl, header, strlen(header));
                 SSL_write(ssl, json, bufNew.offset);
 
-                int f = open("clipslocal.json", O_WRONLY, 0644);
+                int f = open("clips.json", O_WRONLY, 0644);
                 write(f, bufNew.json, bufNew.offset);
                 close(f);
 
@@ -147,7 +147,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
             } else {
 
-                serveFile(ssl, "clipslocal.json");
+                serveFile(ssl, "public/clips.json");
 
             }
 
