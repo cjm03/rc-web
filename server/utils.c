@@ -47,6 +47,13 @@ void urldecode(char* dest, const char* source) {
     *dest = '\0';
 }
 
+void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        sscanf(hexstr + 2 * i, "%2hhx", &buffer[i]);
+    }
+}
+
 
 void logIP(const char* format, ...)
 {

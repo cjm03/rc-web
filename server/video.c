@@ -100,6 +100,31 @@ void serveClipPage(SSL* ssl, const char* clip_id)
     return;
 }
 
+void serveFavicon(SSL* ssl, const char* imagepath)
+{
+    int ico = open(imagepath, O_RDONLY);
+    if (ico < 0) {
+        SSL_write(ssl, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
+        return;
+    }
+    struct stat st;
+    if (fstat(ico, &st) < 0) {
+        perror("fstat");
+        close(ico);
+        return;
+    }
+    off_t filesize = st.st_size;
+    char header[512];
+    snprintf(header, sizeof(header), ICO_OK, filesize);
+    SSL_write(ssl, header, strlen(header));
+    char wombat[16384];
+    read(ico, wombat, sizeof(wombat));
+    SSL_write(ssl, wombat, filesize);
+    close(ico);
+    return;
+}
+
+
 void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
 { // Devil function. Biggest hassle.
     /* Consult hash table for verification */

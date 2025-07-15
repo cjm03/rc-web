@@ -26,6 +26,7 @@
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
+#include "users.h"
 
 // #define PORT 8090
 #define PORT 8443
@@ -40,6 +41,10 @@ int main(void)
     Table* t = createTable();
     loadClipsFromDir(t, "/data/mp4/rust");
     printf("Table: loaded\n");
+
+    /* Initialize and load Users table */
+    UsersTable* ut = createNewUsersTable();
+    insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
 
     /* Initialize OpenSSL and SSL context */
     SSL_CTX* ctx = initSSLCTX();
@@ -75,7 +80,7 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    printf("Server: success :|: port %d\n", PORT);
+    printf("Server: success [%d]\n", PORT);
 
 
     /* Deal with client connections to server */
@@ -140,7 +145,7 @@ int main(void)
             }
 
             /* Handle that thang */
-            handleRequest(t, ssl, req);
+            handleRequest(ut, t, ssl, req);
             printf("[%s]: handled\n", req->url);
 
             /* Free the request */

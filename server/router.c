@@ -28,6 +28,7 @@
 #include "respheaders.h"
 #include "alccalc.h"
 #include "libflate/flate.h"
+#include "users.h"
 
 static int dont_remake_json = 1;
 
@@ -65,7 +66,7 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-void handleRequest(Table* t, SSL* ssl, struct Request* req)
+void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
@@ -157,27 +158,12 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
         } else if (strncmp(resource, "/public/favicon.png", 19) == 0) {
 
-            int icon = open("public/favicon.png", O_RDONLY);
-            if (icon < 0) {
-                SSL_write(ssl, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
-                return;
-            }
-            struct stat st;
-            if (fstat(icon, &st) < 0) {
-                perror("fstat");
-                close(icon);
-                return;
-            }
-            off_t filesize = st.st_size;
+            serveFavicon(ssl, "public/favicon.png");
+            return;
 
-            char header[512];
-            snprintf(header, sizeof(header), ICO_OK, filesize);
-            SSL_write(ssl, header, strlen(header));
-            char wombat[16384];
-            read(icon, wombat, sizeof(wombat));
-            SSL_write(ssl, wombat, filesize);
-            close(icon);
+        } else if (strncmp(resource, "/login.html", 11) == 0) {
 
+            serveFile(ssl, "public/login.html");
             return;
 
         } else {
@@ -192,7 +178,42 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
         const char* postresource = req->url;
 
-        if (strncmp(postresource, "/discount", 9) == 0) {
+        if (strncmp(postresource, "/auth", 5) == 0) {
+
+            char* decoded = req->body;
+            char* username;
+            char* password;
+
+            printf("DECODED: %s\n", decoded);
+
+            const char delim[] = "&=";
+            char* token = strtok(decoded, delim);
+            token = strtok(NULL, delim);
+            username = token;
+            token = strtok(NULL, delim);
+            token = strtok(NULL, delim);
+            password = token;
+
+            printf("%s | %s\n", username, password);
+
+            User* check = userSearch(ut, username);
+            if (!check) {
+                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            }
+            int verify = verifyPasswordHash(password, check->PasswordHash);
+            if (verify == 1) {
+                serveFile(ssl, "public/temp.html");
+            } else {
+                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            }
+
+            free(decoded);
+            free(username);
+            free(password);
+            free(token);
+            return;
+
+        } else if (strncmp(postresource, "/discount", 9) == 0) {
 
             char* posted = req->body;
             Discount* t = createDiscountTable();
