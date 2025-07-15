@@ -115,34 +115,31 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
         } else if (strncmp(resource, "/", 1) == 0 && strlen(resource) == 1) {
 
-            serveFile(ssl, "public/index.html");
+            serveFile(ssl, "public/home.html");
             return;
 
-        /* Used by the function in index.html. Generates .json file displaying all the useful
-           and/or desirable information stored in the hash table */
+        } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
+
+            serveFile(ssl, "public/clipindex.html");
+            return;
+
         } else if (strncmp(resource, "/api/clips", 10) == 0 && strlen(resource) == 10) {
 
             if (dont_remake_json == 0) {
-                printf("WARN: json is being regenerated...\n");
 
+                fprintf(stderr, "WARN: json is being regenerated...\n");
                 char json[32768] = "[";
                 JsonBuffer bufNew = { .json = json, .offset = 1 };
-
                 iterateClips(t, appendClipJson, &bufNew);
-
                 json[bufNew.offset++] = ']';
                 json[bufNew.offset] = '\0';
-
                 char header[256];
                 snprintf(header, sizeof(header), APP_OK, bufNew.offset);
-
                 SSL_write(ssl, header, strlen(header));
                 SSL_write(ssl, json, bufNew.offset);
-
                 int f = open("clips.json", O_WRONLY, 0644);
                 write(f, bufNew.json, bufNew.offset);
                 close(f);
-
                 dont_remake_json = 1;
 
             } else {
@@ -158,10 +155,28 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             serveFile(ssl, "public/alccalc.html");
             return;
 
-        } else if (strncmp(resource, "/favicon.ico", 12) == 0) {
+        } else if (strncmp(resource, "/public/favicon.png", 19) == 0) {
 
-            printf("favicon\n");
-            SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            int icon = open("public/favicon.png", O_RDONLY);
+            if (icon < 0) {
+                SSL_write(ssl, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
+                return;
+            }
+            struct stat st;
+            if (fstat(icon, &st) < 0) {
+                perror("fstat");
+                close(icon);
+                return;
+            }
+            off_t filesize = st.st_size;
+
+            char header[512];
+            snprintf(header, sizeof(header), ICO_OK, filesize);
+            SSL_write(ssl, header, strlen(header));
+            char wombat[16384];
+            read(icon, wombat, sizeof(wombat));
+            SSL_write(ssl, wombat, filesize);
+            close(icon);
 
             return;
 
@@ -180,9 +195,9 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
         if (strncmp(postresource, "/discount", 9) == 0) {
 
             char* posted = req->body;
-            Discount* t = create();
-            parseInput(t, posted);
-            calcDisc(t);
+            Discount* t = createDiscountTable();
+            parseDiscountInput(t, posted);
+            calculateDiscount(t);
             free(posted);
 
             Flate* f = NULL;
@@ -240,7 +255,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
             /* free flate and discount table */
             flateFreeMem(f);
-            freeDisc(t);
+            freeDiscountTable(t);
             
             /* header shit */
             size_t len = strlen(buf);

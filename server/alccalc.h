@@ -12,12 +12,12 @@ typedef struct Discount {
     float totalcost;
 } Discount;
 
-void parseInput(Discount* t, char* data);
+void parseDiscountInput(Discount* t, char* data);
 
-Discount* create(void);
+Discount* createDiscountTable(void);
 
-void calcDisc(Discount* t);
+void calculateDiscount(Discount* t);
 
-void freeDisc(Discount* t);
+void freeDiscountTable(Discount* t);
 
 #endif // ALCCALC_H

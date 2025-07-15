@@ -16,12 +16,12 @@
 #include <sys/sendfile.h>
 #include <sys/uio.h>
 #include <stdbool.h>
-#include <errno.h>
 #include <signal.h>
 
 #include "video.h"
 #include "hashtable.h"
 #include "respheaders.h"
+#include "libflate/flate.h"
 
 //==========================================================================================================
 // define
@@ -79,48 +79,24 @@ void serveClipPage(SSL* ssl, const char* clip_id)
     char vidurl[256];
     snprintf(vidurl, sizeof(vidurl), "/clip?id=%s", clip_id);
 
-    char html[4096];
-    snprintf(html, sizeof(html),
-             "<!DOCTYPE html>"
-             "<html lang='en'>"
-             "<head>"
-             "<meta charset='UTF-8'>"
-             "<title>Clip Viewer</title>"
-             "<style>"
-             "body { font-family: sans-serif; background: #121212; color: #eee; padding: 1em; }"
-             ".container { display: flex; justify-content: center; align-items: center; padding: 2rem; }"
-             "video { width: 90%%; height: auto; border: 2px solid #ccc; border-radius: 8px; }"
-             "</style>"
-             "</head>"
-             "<body>"
-             "<div>"
-             "<nav><a href='/'>Home</a></nav>"
-             "</div>"
-             "<h1>Now Playing</h1>"
-             "<div class='container'>"
-             "<video controls autoplay>"
-             "<source src='%s' type='video/mp4'>"
-             "Your browser does not support the video tag."
-             "</video>"
-             "</div>"
-             "</body></html>", vidurl);
+    Flate* f = NULL;
+    flateSetFile(&f, "public/clip.html");
+    flateSetVar(f, "clip", vidurl, NULL);
 
-    size_t bodylen = strlen(html);
+    char* buf = flatePage(f);
+    flateFreeMem(f);
 
-    //======================================================================================================
-    // Bad code actually horrendous
-    // should fix...
-    //======================================================================================================
-
+    size_t len = strlen(buf);
     char header[512];
     snprintf(header, sizeof(header),
              "HTTP/1.1 200 OK\r\n"
              "Content-Type: text/html\r\n"
-             "Content-Length: %zu\r\n"
-             "Connection: keep-alive\r\n\r\n", bodylen);
+             "Content-Length: %ld\r\n"
+             "Connection: keep-alive\r\n\r\n", len);
 
     SSL_write(ssl, header, strlen(header));
-    SSL_write(ssl, html, bodylen);
+    SSL_write(ssl, buf, len);
+    free(buf);
     return;
 }
 

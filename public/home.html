@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>stealthywombat</title>
+        <!-- <link rel="icon" type="image/x-icon" href="/favicon.ico"> -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link rel="icon" type="image/png" href="public/favicon.png">
+        <style>
+            body {
+                background: #121212;
+                color: #fff;
+            }
+            div {
+                background: #121212;
+                color: #fff;
+            }
+            .blog-header-logo {
+                font-family: sans-serif;
+                font-size: 2.25rem;
+                background: #121212;
+                color: #fff;
+            }
+            .blog-header-logo:hover {
+                text-decoration: none;
+            }
+            .flex-auto {
+                flex: 0 0 auto;
+            }
+            .h-250 {
+                height: 250px;
+            }
+            @media (min-width: 768px) {
+                .h-md-250 {
+                    height: 250px;
+                }
+            }
+            .blog-pagination {
+                margin-bottom: 4rem;
+            }
+            .blog-post {
+                margin-bottom: 4rem;
+            }
+            .blog-post-meta {
+                font-family: sans-serif;
+                margin-bottom: 1.25rem;
+                color: #727272;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="container">
+            <header class="border-bottom lh-1 py-3 text-center mb-3">
+                <a class="blog-header-logo text-decoration-none" style="background:#121212;color:#fff;" href="/">stealthywombat.tech</a>
+            </header>
+        </div>
+
+        <main class="container">
+            <div class="row g-5">
+                <div class="col-md-8">
+                    <article class="blog-post">
+                        <h2 id="first-post" class="display-5 blog-header-logo mb-1">
+                            First Post
+                        </h2>
+                        <p class="blog-post-meta">2025-07-14</p>
+                        <figure>
+                            <blockquote class="blockquote">
+                                <p style="font-family:sans-serif;">
+                                    The name of this project is rc-web, because initially it
+                                    was a program I wrote in C to render clips from the game Rust
+                                    over HTTP. I chose C because it seemed like it would be a 
+                                    good way to get a lower level understanding of sockets in
+                                    comparison to the way writing a web server in Python gave me.
+                                    I have certainly learned quite a lot through the journey, and
+                                    I'm currently focusing on furthering the implementation of HTTPS,
+                                    which currently uses locally generated certs and is certainly not
+                                    secure. Alongside this, I have also noticed many foreign IP's trying
+                                    to access it, among other ports I have open on my network and plan
+                                    to implement defensive programs to secure this site because I am too
+                                    broke/cheap to get a cloud host. Source code is available on GitHub.
+                                </p>
+                            </blockquote>
+                            <figcaption class="blockquote-footer">
+                                <a href="https://github.com/cjm03/rc-web">
+                                    rcw source
+                                </a>
+                            </figcaption>
+                        </figure>
+                    </article>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="position-sticky" style="top: 2rem;">
+                        <div class="py-4 mb-3 rounded">
+                            <h2 style="font-family:sans-serif;">About</h2>
+                            <p class="mb-0" style="font-family:sans-serif;">
+                                My name is Charlie Moye and I'm studying Computer Science with
+                                a focus on Security at Indiana University. 
+                                <!-- I'm currently in my -->
+                                <!-- fourth year with 1.5 years to go, because I changed my major from -->
+                                <!-- Cybersecurity & Global Policy to Computer Science. The CSGP degree -->
+                                <!-- from IU was enticing in the beginning, but turned out to be (imo) -->
+                                <!-- 70% Global Policy focused and 30% Cybersecurity focused. After  -->
+                                <!-- taking many global policy classes I decided I do not have the  -->
+                                <!-- mental capacity to consistently suck up to policy makers for change -->
+                                <!-- and would rather work in a basement writing code. Nothing but  -->
+                                <!-- respect for those working in policy, I just couldn't manage. -->
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 style="font-family:sans-serif;">Recents</h3>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <a class="d-flex flex-column flex-lg-row gap-3 align-items-start align-items-lg-center py-3 link-body-emphasis border-top" href="/clipindex.html">
+                                        <div class="col-lg-8">
+                                            <h5 class="mb-0">Clips Index</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="d-flex flex-column flex-lg-row gap-3 align-items-start align-items-lg-center py-3 link-body-emphasis border-top" href="public/alccalc.html">
+                                        <div class="col-lg-8">
+                                            <h5 class="mb-0">Kroger Alcohol Discount</h5>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4>Elsewhere</h4>
+                            <ol class="list-unstyled">
+                                <li>
+                                    <a href="https://github.com/cjm03">
+                                        <i class="bi bi-github"></i>
+                                        GitHub
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="py-5 text-center text-body-secondary" style="background:#222222;">
+            <p style="color:#fff;">Template built for <a href="https://getbootstrap.com/">Bootstrap</a></p>
+            <p class="mb-0" style="color:#fff;">
+                <a href="#">Back to top</a>
+            </p>
+        </footer>
+
+    </body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</html>

@@ -62,7 +62,6 @@ void logIP(const char* format, ...)
     va_list args;
     va_start(args, format);
     vsnprintf(msg, sizeof(msg), format, args);
-//    vfprintf(log, format, args);
     va_end(args);
 
     size_t len = strlen(msg);

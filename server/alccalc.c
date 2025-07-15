@@ -5,7 +5,7 @@
 #include "alccalc.h"
 
 
-void parseInput(Discount* t, char* data)
+void parseDiscountInput(Discount* t, char* data)
 {
     size_t dlen = strlen(data);
     char copy[dlen];
@@ -25,7 +25,7 @@ void parseInput(Discount* t, char* data)
     return;
 }
 
-Discount* create(void)
+Discount* createDiscountTable(void)
 {
     Discount* t = malloc(sizeof(Discount));
     t->orig = calloc(ITEMS, sizeof(float*) * 2);
@@ -36,7 +36,7 @@ Discount* create(void)
     return t;
 }
 
-void calcDisc(Discount* t)
+void calculateDiscount(Discount* t)
 {
     for (int j = 0; j < ITEMS; j++) {
         t->disc[j] = t->orig[j] * DISCOUNT;
@@ -47,15 +47,12 @@ void calcDisc(Discount* t)
     return;
 }
 
-void freeDisc(Discount* t)
+void freeDiscountTable(Discount* t)
 {
     for (int k = 0; k < ITEMS; k++) {
         t->orig[k] = 0.0;
         t->disc[k] = 0.0;
         t->newp[k] = 0.0;
     }
-    // free(t->orig);
-    // free(t->disc);
-    // free(t->newp);
     free(t);
 }

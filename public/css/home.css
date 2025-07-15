@@ -1,0 +1,31 @@
+.blog-header-logo {
+    font-family: sans-serif;
+    font-size: 2.25rem;
+    background: #121212;
+    color: #eee;
+    padding: 1em;
+}
+.blog-header-logo:hover {
+    text-decoration: none;
+}
+.flex-auto {
+    flex: 0 0 auto;
+}
+.h-250 {
+    height: 250px;
+}
+@media (min-width: 768px) {
+    .h-md-250 {
+        height: 250px;
+    }
+}
+.blog-pagination {
+    margin-bottom: 4rem;
+}
+.blog-post {
+    margin-bottom: 4rem;
+}
+.blog-post-meta {
+    margin-bottom: 1.25rem;
+    color: #727272;
+}
