@@ -7,6 +7,8 @@
 #define INITBASESIZE 256
 #define HT_PRIME1 151
 #define HT_PRIME2 163
+#define HT_PRIME3 10837
+#define HT_PRIME 11683
 
 typedef struct Item {
     char* id;
