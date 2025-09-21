@@ -7,7 +7,7 @@
 
 #include "hashtable.h"
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 8192
 
 /* serves a raw file at passed filepath to passed client socket descriptor */
 void serveFile(SSL* ssl, const char* filepath);

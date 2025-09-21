@@ -66,7 +66,7 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
+void handleRequest(Table* t, SSL* ssl, struct Request* req)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
@@ -217,13 +217,12 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
         // } else if (strncmp(postresource, "/discount", 9) == 0) {
         if (strncmp(postresource, "/discount", 9) == 0) {
 
-            char* posted = req->body;
             // printf("%s\n", posted);
             printRequest(req);
             Discount* t = createDiscountTable();
-            parseDiscountInput(t, posted);
+            // parseDiscountInput(t, posted);
+            parseDiscountInput(t, req->body);
             calculateDiscount(t);
-            free(posted);
 
             Flate* f = NULL;
             flateSetFile(&f, "public/discounted.html");

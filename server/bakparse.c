@@ -55,97 +55,105 @@ const char* getHeaderValue(Request* req, const char* header)
 
 Request* parseRequest(const char* raw)
 {
-    // Request* req = calloc(1, sizeof(Request));
+    char* req_in = malloc(BUFFER_SIZE);
+    urldecode(req_in, raw);
     struct Request* req = NULL;
     req = malloc(sizeof(struct Request));
-    if (req == NULL) {
-        fprintf(stderr, "req malloc failed");
-        exit(EXIT_FAILURE);
+    if (!req) {
+        return NULL;
     }
+    memset(req, 0, sizeof(struct Request));
 
-    // req->headers = calloc(MAXHDRCOUNT, sizeof(Header));
-    // if (req->headers == NULL) {
-    //     fprintf(stderr, "req->headers malloc failed");
-    //     exit(EXIT_FAILURE);
-    // }
-    //
-    // req->body = malloc(MAXBUF);
-    // if (req->body == NULL) {
-    //     fprintf(stderr, "req->body malloc failed");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    const char* bodystart = strstr(raw, "\r\n\r\n");
-    size_t seplen = 4;
-    if (!bodystart) {
-        bodystart = strstr(raw, "\n\n");
-        seplen = 2;
-    }
-    if (!bodystart) {
-        fprintf(stderr, "malformed request, bailing");
-        exit(EXIT_FAILURE);
-    }
-    size_t headerlen = bodystart - raw;
-    // char* headersection = malloc(headerlen + 1);                        // MEMORY
-    char* headersection = malloc(sizeof(Header));                        // MEMORY
-    memcpy(headersection, raw, headerlen);
-    headersection[headerlen] = '\0';
-
-    char* line = strtok(headersection, "\r\n");
-    char method[16] = {0}, uri[256] = {0}, version[16] = {0};
-    sscanf(line, "%15s %255s %15s", method, uri, version);
-
-    if (strcmp(method, "GET") == 0) req->method = GET;
-    else if (strcmp(method, "POST") == 0) req->method = POST;
-    else if (strcmp(method, "HEAD") == 0) req->method = HEAD;
-    else req->method = UNSUPPORTED;
-
-    req->url = strdup(uri);
-    req->version = strdup(version);
-
-    Header* last = NULL;
-    while ((line = strtok(NULL, "\r\n")) != NULL && strlen(line) > 0) {
-        char* colon = strchr(line, ':');
-        if (!colon) continue;
-        size_t namelen = colon - line;
-        char* name = malloc(namelen + 1);                               // MEMORY
-        strncpy(name, line, namelen);
-        name[namelen] = '\0';
-
-        char* value = colon + 1;
-        while (*value == ' ') value++;
-
-        Header* header = calloc(1, sizeof(Header));                     // MEMORY
-        header->name = name;
-        header->value = strdup(value);
-        header->next = last;
-        last = header;
-    }
-    req->headers = last;
-    size_t contentlength = 0;
-    Header* h = req->headers;
-    while (h) {
-        if (strcasecmp(h->name, "Content-Length") == 0) contentlength = atoi(h->value);
-        h = h->next;
-    }
-
-    bodystart += seplen;
-    char* body = calloc(contentlength + 1, 1);                          // MEMORY
-
-    if (contentlength > 0) {
-        memcpy(body, bodystart, contentlength);
+    // method
+    size_t methodlen = strcspn(req_in, " ");
+    if (memcmp(req_in, "GET", strlen("GET")) == 0) {
+        req->method = GET;
+    } else if (memcmp(req_in, "HEAD", strlen("HEAD")) == 0) {
+        req->method = HEAD;
+    } else if (memcmp(req_in, "POST", strlen("POST")) == 0) {
+        req->method = POST;
     } else {
-        // fallback, copy whatever remains (possibly empty)
-        strncpy(body, bodystart, BUFFER_SIZE - (bodystart - raw));
+        req->method = UNSUPPORTED;
     }
-    char* decodedbody = malloc(contentlength + 1);                      // MEMORY
-    urldecode(decodedbody, body);
-    printf("decoded: %s\n", decodedbody);
-    free(body);
-    req->body = decodedbody;
-    free(headersection);
-    return req;
+    req_in += methodlen + 1;
 
+    // uri
+    size_t urllen = strcspn(req_in, " ");
+    req->url = malloc(urllen + 1);
+    if (!req->url) {
+        freeRequest(req);
+        return NULL;
+    }
+    memcpy(req->url, req_in, urllen);
+    req->url[urllen] = '\0';
+    req_in += urllen + 1;
+
+    // http version
+    size_t verlen = strcspn(req_in, "\r\n");
+    req->version = malloc(verlen + 1);
+    if (!req->version) {
+        freeRequest(req);
+        return NULL;
+    }
+    memcpy(req->version, req_in, verlen);
+    req->version[verlen] = '\0';
+    req_in += verlen + 2;
+
+    struct Header* header = NULL, *last = NULL;
+    while (req_in[0] != '\r' || req_in[1] != '\n') {
+        last = header;
+        header = malloc(sizeof(Header));
+        if (!header) {
+            freeRequest(req);
+            return NULL;
+        }
+
+        // name
+        size_t namelen = strcspn(req_in, ":");
+        header->name = malloc(namelen + 1);
+        if (!header->name) {
+            freeRequest(req);
+            return NULL;
+        }
+        memcpy(header->name, req_in, namelen);
+        header->name[namelen] = '\0';
+        req_in += namelen + 1;
+        while (*req_in == ' ') {
+            req_in++;
+        }
+
+        // value
+        size_t valuelen = strcspn(req_in, "\r\n");
+        header->value = malloc(valuelen + 1);
+        if (!header->value) {
+            freeRequest(req);
+            return NULL;
+        }
+        memcpy(header->value, req_in, valuelen);
+        header->value[valuelen] = '\0';
+        req_in += valuelen + 2;
+
+        // next
+        header->next = last;
+    }
+    req->headers = header;
+    req_in += 2;
+    printf("reqin: %s\n", req_in);
+
+    size_t bodylen = strlen(req_in);
+    req->body = malloc(bodylen + 1);
+    // char* tmp = malloc(sizeof(char) * 128);
+    if (!req->body) {
+        freeRequest(req);
+        return NULL;
+    }
+    // urldecode(tmp, req_in);
+    // printf("%s \n|\n %s\n", req_in, tmp);
+    memcpy(req->body, req_in, bodylen);
+    req->body[bodylen] = '\0';
+    // free(tmp);
+
+    return req;
 }
 
 //========================================================================================

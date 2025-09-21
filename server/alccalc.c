@@ -9,7 +9,9 @@ void parseDiscountInput(Discount* t, char* data)
 {
     size_t dlen = strlen(data);
     char copy[dlen];
-    printf("data: %s\n", data);
+    printf("DATA: [%s]\n", data);
+    printf("copy: [%s]\n", copy);
+
     printf("0-4: %c %c %c %c %c\n", data[0], data[1], data[2], data[3], data[4]);
     strncpy(copy, data, dlen);
     char* token = strtok(copy, "&");

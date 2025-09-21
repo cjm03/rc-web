@@ -44,8 +44,8 @@ int main(void)
     printf("Table: loaded\n");
 
     /* Initialize and load Users table */
-    UsersTable* ut = createNewUsersTable();
-    insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
+    // UsersTable* ut = createNewUsersTable();
+    // insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
 
     /* Initialize OpenSSL and SSL context */
     SSL_CTX* ctx = initSSLCTX();
@@ -122,20 +122,29 @@ int main(void)
                 exit(1);
             }
 
-            char buffer[BUFFER_SIZE] = {0};
+            // char buffer[BUFFER_SIZE] = {0};
 
-            int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
-            if (bRead <= 0) {
-                ERR_print_errors_fp(stderr);
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                close(client_fd);
-                exit(EXIT_FAILURE);
-            }
-
-            buffer[bRead] = '\0';
+            // int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
+            // printf("SSL: %s\n", (char*)ssl);
+            // if (bRead <= 0) {
+            //     ERR_print_errors_fp(stderr);
+            //     SSL_shutdown(ssl);
+            //     SSL_free(ssl);
+            //     close(client_fd);
+            //     exit(EXIT_FAILURE);
+            // }
+            //
+            // buffer[bRead] = '\0';
+            int reqlen = 0;
+            char* buffer = readFullRequest(ssl, &reqlen);
+            printf("RAW REQUEST:\n%s\n", buffer);
+            // for (int i = 0; i < bRead; i++) {
+            //     printf("%02x ", (unsigned char)buffer[i]);
+            // }
+            // printf("\n");
 
             /* Parse the request and store in Request structure req */
+            // printf("%s\n", buffer);
             struct Request* req = parseRequest(buffer);
             if (!req) {
                 fprintf(stderr, "parser: fail\n");
@@ -146,11 +155,12 @@ int main(void)
             }
 
             /* Handle that thang */
-            handleRequest(ut, t, ssl, req);
+            handleRequest(t, ssl, req);
             printf("[%s]: handled\n", req->url);
 
             /* Free the request */
             freeRequest(req);
+            free(buffer);
             printf("req: freed\n");
 
             /* Shutdown SSL, free SSL, close clientfd */
