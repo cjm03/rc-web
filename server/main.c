@@ -30,7 +30,8 @@
 
 // #define PORT 8090
 #define PORT 8443
-#define BUFFER_SIZE 4096
+// #define BUFFER_SIZE 4096
+#define BUFFER_SIZE 8192
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
 

@@ -4,8 +4,8 @@
 #define MAXLINELEN 256
 #define MAXHDRLEN 256
 #define PAIR 2
-#define MAXHDRCOUNT 50
-#define MAXBUF 4096
+#define MAXHDRCOUNT 64
+#define MAXBUF 8192
 
 typedef enum Method {UNSUPPORTED, GET, HEAD, POST} Method;
 typedef struct Header {
@@ -38,7 +38,7 @@ const char* getHeaderValue(Request* req, const char* header);
 
 /* takes in the buffer containing the request to parse */
 /* first obtains the method, then the URI, then the version, then parses all the headers */
-Request* parseRequest(const char* req_in);
+Request* parseRequest(const char* raw);
 
 //===========================================
 // printer

@@ -8,6 +8,7 @@ typedef struct Discount {
     float* orig;
     float* disc;
     float* newp;
+    float totalorig;
     float totaldisc;
     float totalcost;
 } Discount;

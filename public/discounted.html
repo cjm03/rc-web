@@ -1,33 +1,91 @@
 <!DOCTYPE html>
 <html lang='en'>
+
     <head>
+
         <meta charset='UTF-8'>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Discounts</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" 
+            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <link rel="icon" type="image/png" href="public/favicon.png">
+
+        <style>
+            body {
+                background: #121212;
+                color: #fff;
+            }
+            main {
+                background: #121212;
+            }
+            div {
+                background: #121212;
+                color: #fff;
+            }
+        </style>
+
     </head>
+
     <body>
-        <div>
-            <nav>
-                <a href="/">Home</a>
-                <a href="/public/alccalc.html">New Calculation</a>
+
+        <header>
+            <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+                <div class="container-fluid lh-0 py-3 mb-0">
+                    <a class="navbar-brand" href="/">stealthywombat.tech</a>
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/clipindex.html">clips</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/public/alccalc.html">New Calculation</a>
+                        </li>
+                    </ul>
+                    <form class="d-flex" role="search">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <button class="btn btn-outline-primary" type="submit">Search</button>
+                    </form>
+                </div>
             </nav>
-        </div>
+        </header>
+
+        <!-- <div> -->
+        <!--     <nav> -->
+        <!--         <a href="/">Home</a> -->
+        <!--         <a href="/public/alccalc.html">New Calculation</a> -->
+        <!--     </nav> -->
+        <!-- </div> -->
         <h2>Discount Calculation</h2>
-        <table border="1">
+        <table class="table table-dark table-bordered" style="width: 25%"> <!--border="1"--> 
             <tr>
-                <th>Original</th>
-                <th>Discount</th>
-                <th>New Price</th>
+                <th style="width: 10%;">#</th>
+                <th style="width: 30%;">Original</th>
+                <th style="width: 30%;" class="table-success">New Price</th>
+                <th style="width: 30%;" class="table-info">Discount</th>
             </tr>
             <!-- #BEGINTABLE disc -->
             <tr>
+                <th>##indexnum##</th>
                 <th>##original##</th>
-                <th>##discount##</th>
-                <th>##new##</th>
+                <th class="table-success">##new##</th>
+                <th class="table-info">##discount##</th>
             </tr>
             <!-- #ENDTABLE disc -->
+            <tr>
+                <th>Totals</th>
+                <th>$##totalorig##</th>
+                <th class="table-success">$##totalcost##</th>
+                <th>$##totaldisc##</th>
+            </tr>
         </table>
-        <h3>Total Discount: ##totaldisc##</h3>
-        <h3>Total After Discount: ##totalcost##</h3>
+        <h3>Before Discount: $##totalorig##</h3>
+        <h3>Total Discount: -$##totaldisc##</h3>
+        <div class="border-bottom"></div>
+        <h3>After Discount : $##totalcost##</h3>
     </body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" 
+        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" 
+        crossorigin="anonymous"></script>
+
 </html>

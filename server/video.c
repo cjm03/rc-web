@@ -81,6 +81,7 @@ void serveClipPage(SSL* ssl, const char* clip_id)
 
     Flate* f = NULL;
     flateSetFile(&f, "public/clip.html");
+    flateSetVar(f, "clipname", clip_id, NULL);
     flateSetVar(f, "clip", vidurl, NULL);
 
     char* buf = flatePage(f);

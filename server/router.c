@@ -161,11 +161,11 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
             serveFavicon(ssl, "public/favicon.png");
             return;
 
-        } else if (strncmp(resource, "/login.html", 11) == 0) {
-
-            serveFile(ssl, "public/login.html");
-            return;
-
+        // } else if (strncmp(resource, "/login.html", 11) == 0) {
+        //
+        //     serveFile(ssl, "public/login.html");
+        //     return;
+        //
         } else {
 
             printf("%s %s\n", NOT_FOUND, resource);
@@ -178,44 +178,48 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
 
         const char* postresource = req->url;
 
-        if (strncmp(postresource, "/auth", 5) == 0) {
+        // if (strncmp(postresource, "/auth", 5) == 0) {
+        //
+        //     char* decoded = req->body;
+        //     char* username;
+        //     char* password;
+        //
+        //     printf("DECODED: %s\n", decoded);
+        //
+        //     const char delim[] = "&=";
+        //     char* token = strtok(decoded, delim);
+        //     token = strtok(NULL, delim);
+        //     username = token;
+        //     token = strtok(NULL, delim);
+        //     token = strtok(NULL, delim);
+        //     password = token;
+        //
+        //     printf("%s | %s\n", username, password);
+        //
+        //     User* check = userSearch(ut, username);
+        //     if (!check) {
+        //         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+        //     }
+        //     int verify = verifyPasswordHash(password, check->PasswordHash);
+        //     if (verify == 1) {
+        //         serveFile(ssl, "public/temp.html");
+        //     } else {
+        //         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+        //     }
+        //
+        //     free(decoded);
+        //     free(username);
+        //     free(password);
+        //     free(token);
+        //     return;
+        //
 
-            char* decoded = req->body;
-            char* username;
-            char* password;
-
-            printf("DECODED: %s\n", decoded);
-
-            const char delim[] = "&=";
-            char* token = strtok(decoded, delim);
-            token = strtok(NULL, delim);
-            username = token;
-            token = strtok(NULL, delim);
-            token = strtok(NULL, delim);
-            password = token;
-
-            printf("%s | %s\n", username, password);
-
-            User* check = userSearch(ut, username);
-            if (!check) {
-                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-            }
-            int verify = verifyPasswordHash(password, check->PasswordHash);
-            if (verify == 1) {
-                serveFile(ssl, "public/temp.html");
-            } else {
-                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-            }
-
-            free(decoded);
-            free(username);
-            free(password);
-            free(token);
-            return;
-
-        } else if (strncmp(postresource, "/discount", 9) == 0) {
+        // } else if (strncmp(postresource, "/discount", 9) == 0) {
+        if (strncmp(postresource, "/discount", 9) == 0) {
 
             char* posted = req->body;
+            // printf("%s\n", posted);
+            printRequest(req);
             Discount* t = createDiscountTable();
             parseDiscountInput(t, posted);
             calculateDiscount(t);
@@ -225,8 +229,8 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
             flateSetFile(&f, "public/discounted.html");
 
             for (int k = 0; k < ITEMS; k++) {
-
                 /* temps to convert float to char */
+                char buffer[3];
                 char* temp1 = malloc(16);
                 char* temp2 = malloc(16);
                 char* temp3 = malloc(16);
@@ -236,14 +240,18 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
                 }
 
                 /* put rounded float value in temps */
+                sprintf(buffer, "%d", k + 1);
                 snprintf(temp1, 16, "%.2f", t->orig[k]);
-                snprintf(temp2, 16, "%.2f", t->disc[k]);
-                snprintf(temp3, 16, "%.2f", t->newp[k]);
+                snprintf(temp2, 16, "%.2f", t->newp[k]);
+                snprintf(temp3, 16, "%.2f", t->disc[k]);
+                // snprintf(temp2, 16, "%.2f", t->disc[k]);
+                // snprintf(temp3, 16, "%.2f", t->newp[k]);
 
                 /* load temps into flate equivalent */
+                flateSetVar(f, "indexnum", buffer, NULL);
                 flateSetVar(f, "original", temp1, NULL);
-                flateSetVar(f, "discount", temp2, NULL);
-                flateSetVar(f, "new", temp3, NULL);
+                flateSetVar(f, "new", temp2, NULL);
+                flateSetVar(f, "discount", temp3, NULL);
                 flateSetVar(f, "disc", "", NULL);
 
                 /* dump the flate vars */
@@ -256,18 +264,26 @@ void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req)
             }
 
             /* temp */
+            char* temptotalorig = malloc(16);
             char* temptotaldisc = malloc(16);
             char* temptotalcost = malloc(16);
+            if (temptotalorig == NULL || temptotaldisc == NULL || temptotalcost == NULL) {
+                perror("malloc\n");
+                exit(EXIT_FAILURE);
+            }
 
             /* store */
+            snprintf(temptotalorig, 16, "%.2f", t->totalorig);
             snprintf(temptotaldisc, 16, "%.2f", t->totaldisc);
             snprintf(temptotalcost, 16, "%.2f", t->totalcost);
 
             /* load */
+            flateSetVar(f, "totalorig", temptotalorig, NULL);
             flateSetVar(f, "totaldisc", temptotaldisc, NULL);
             flateSetVar(f, "totalcost", temptotalcost, NULL);
 
             /* free */
+            free(temptotalorig);
             free(temptotaldisc);
             free(temptotalcost);
 

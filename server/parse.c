@@ -12,6 +12,9 @@
 #include <fcntl.h>
 
 #include "parse.h"
+#include "utils.h"
+
+#define BUFFER_SIZE 8096
 
 //===============================================================================================================
 // functions to get specific headers or their values.
@@ -50,8 +53,10 @@ const char* getHeaderValue(Request* req, const char* header)
 // The Parser.
 //===========================================================================================================
 
-Request* parseRequest(const char* req_in)
+Request* parseRequest(const char* raw)
 {
+    char* req_in = malloc(BUFFER_SIZE);
+    urldecode(req_in, raw);
     struct Request* req = NULL;
     req = malloc(sizeof(struct Request));
     if (!req) {
@@ -136,12 +141,16 @@ Request* parseRequest(const char* req_in)
 
     size_t bodylen = strlen(req_in);
     req->body = malloc(bodylen + 1);
+    // char* tmp = malloc(sizeof(char) * 128);
     if (!req->body) {
         freeRequest(req);
         return NULL;
     }
+    // urldecode(tmp, req_in);
+    // printf("%s \n|\n %s\n", req_in, tmp);
     memcpy(req->body, req_in, bodylen);
     req->body[bodylen] = '\0';
+    // free(tmp);
 
     return req;
 }
