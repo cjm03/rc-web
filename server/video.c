@@ -109,7 +109,7 @@ void serveFavicon(SSL* ssl, const char* imagepath)
     }
     struct stat st;
     if (fstat(ico, &st) < 0) {
-        perror("fstat");
+        perror("fstat (serveFavicon)");
         close(ico);
         return;
     }
@@ -121,6 +121,31 @@ void serveFavicon(SSL* ssl, const char* imagepath)
     read(ico, wombat, sizeof(wombat));
     SSL_write(ssl, wombat, filesize);
     close(ico);
+    return;
+}
+
+void serveImage(SSL* ssl, const char* filepath)
+{
+    int img = open(filepath, O_RDONLY);
+    if (img < 0) {
+        SSL_write(ssl, INTERNAL_ERROR, strlen(INTERNAL_ERROR));
+        return;
+    }
+    struct stat st;
+    if (fstat(img, &st) < 0) {
+        perror("fstat (serveImage)");
+        close(img);
+        return;
+    }
+    off_t filesize = st.st_size;
+    char header[512];
+    snprintf(header, sizeof(header), ICO_OK, filesize);
+    SSL_write(ssl, header, strlen(header));
+    // char storethathoe[32768];
+    char storethathoe[filesize + 1];
+    read(img, storethathoe, sizeof(storethathoe));
+    SSL_write(ssl, storethathoe, filesize);
+    close(img);
     return;
 }
 

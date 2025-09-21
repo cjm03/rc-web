@@ -7,7 +7,6 @@
 
 #include "parse.h"
 #include "hashtable.h"
-#include "users.h"
 
 //=============================
 // structs

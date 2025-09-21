@@ -17,6 +17,7 @@ void serveClipPage(SSL* ssl, const char* clip_id);
 
 /* serves a favicon */
 void serveFavicon(SSL* ssl, const char* imagepath);
+void serveImage(SSL* ssl, const char* filepath);
 
 /* serves a video file located at the clip_id's filepath to passed client socket descriptor */
 /* also takes in the table and the Range header's range */

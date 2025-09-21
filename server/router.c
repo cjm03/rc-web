@@ -28,7 +28,6 @@
 #include "respheaders.h"
 #include "alccalc.h"
 #include "libflate/flate.h"
-#include "users.h"
 
 static int dont_remake_json = 1;
 
@@ -161,11 +160,21 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
             serveFavicon(ssl, "public/favicon.png");
             return;
 
-        // } else if (strncmp(resource, "/login.html", 11) == 0) {
-        //
-        //     serveFile(ssl, "public/login.html");
-        //     return;
-        //
+        } else if (strncmp(resource, "/private/phishy.png", 19) == 0) {
+
+            serveImage(ssl, "private/phishy.png");
+            return;
+
+        } else if (strncmp(resource, "/private/basket.png", 19) == 0) {
+
+            serveImage(ssl, "private/basket.png");
+            return;
+
+        } else if (strncmp(resource, "/private/meitei.png", 19) == 0) {
+
+            serveImage(ssl, "private/meitei.png");
+            return;
+
         } else {
 
             printf("%s %s\n", NOT_FOUND, resource);

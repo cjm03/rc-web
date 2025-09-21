@@ -26,7 +26,6 @@
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
-#include "users.h"
 
 #define PORT 8443
 #define BUFFER_SIZE 8192
