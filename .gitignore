@@ -2,7 +2,10 @@ media/
 logs/
 ssl/
 ipdb/
+private/
 rcw
 old
 dur.c
 dur
+req.txt
+reqb.txt

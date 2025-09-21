@@ -217,10 +217,9 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
         // } else if (strncmp(postresource, "/discount", 9) == 0) {
         if (strncmp(postresource, "/discount", 9) == 0) {
 
-            // printf("%s\n", posted);
-            printRequest(req);
+            // printRequest(req);
+
             Discount* t = createDiscountTable();
-            // parseDiscountInput(t, posted);
             parseDiscountInput(t, req->body);
             calculateDiscount(t);
 

@@ -55,25 +55,12 @@ const char* getHeaderValue(Request* req, const char* header)
 
 Request* parseRequest(const char* raw)
 {
-    // Request* req = calloc(1, sizeof(Request));
-    struct Request* req = NULL;
-    req = malloc(sizeof(struct Request));
+    struct Request* req = malloc(sizeof(struct Request));
     if (req == NULL) {
         fprintf(stderr, "req malloc failed");
         exit(EXIT_FAILURE);
     }
-
-    // req->headers = calloc(MAXHDRCOUNT, sizeof(Header));
-    // if (req->headers == NULL) {
-    //     fprintf(stderr, "req->headers malloc failed");
-    //     exit(EXIT_FAILURE);
-    // }
-    //
-    // req->body = malloc(MAXBUF);
-    // if (req->body == NULL) {
-    //     fprintf(stderr, "req->body malloc failed");
-    //     exit(EXIT_FAILURE);
-    // }
+    memset(req, 0, sizeof(struct Request));
 
     const char* bodystart = strstr(raw, "\r\n\r\n");
     size_t seplen = 4;
@@ -83,11 +70,18 @@ Request* parseRequest(const char* raw)
     }
     if (!bodystart) {
         fprintf(stderr, "malformed request, bailing");
-        exit(EXIT_FAILURE);
+        freeRequest(req);
+        return NULL;
+        // exit(EXIT_FAILURE);
     }
     size_t headerlen = bodystart - raw;
-    // char* headersection = malloc(headerlen + 1);                        // MEMORY
-    char* headersection = malloc(sizeof(Header));                        // MEMORY
+    char* headersection = malloc(headerlen + 1);                        // MEMORY SWAPPED
+    // char* headersection = malloc(sizeof(Header));                        // MEMORY SWAPPED
+    if (!headersection) {
+        fprintf(stderr, "headersection malloc failure\n");
+        free(req);
+        exit(EXIT_FAILURE);
+    }
     memcpy(headersection, raw, headerlen);
     headersection[headerlen] = '\0';
 
@@ -109,6 +103,12 @@ Request* parseRequest(const char* raw)
         if (!colon) continue;
         size_t namelen = colon - line;
         char* name = malloc(namelen + 1);                               // MEMORY
+        if (!name) {
+            fprintf(stderr, "header name malloc failure\n");
+            free(headersection);
+            freeRequest(req);
+            exit(EXIT_FAILURE);
+        }
         strncpy(name, line, namelen);
         name[namelen] = '\0';
 
@@ -116,12 +116,20 @@ Request* parseRequest(const char* raw)
         while (*value == ' ') value++;
 
         Header* header = calloc(1, sizeof(Header));                     // MEMORY
+        if (!header) {
+            fprintf(stderr, "header malloc failure\n");
+            free(name);
+            free(headersection);
+            freeRequest(req);
+            exit(EXIT_FAILURE);
+        }
         header->name = name;
         header->value = strdup(value);
         header->next = last;
         last = header;
     }
     req->headers = last;
+
     size_t contentlength = 0;
     Header* h = req->headers;
     while (h) {
@@ -130,22 +138,31 @@ Request* parseRequest(const char* raw)
     }
 
     bodystart += seplen;
-    char* body = calloc(contentlength + 1, 1);                          // MEMORY
-
-    if (contentlength > 0) {
-        memcpy(body, bodystart, contentlength);
-    } else {
-        // fallback, copy whatever remains (possibly empty)
-        strncpy(body, bodystart, BUFFER_SIZE - (bodystart - raw));
+    size_t bodylen = strlen(bodystart);
+    if (contentlength > 0 && bodylen > contentlength) bodylen = contentlength;
+    char* body = calloc(bodylen + 1, 1);                          // MEMORY
+    if (!body) {
+        fprintf(stderr, "body calloc failure\n");
+        free(headersection);
+        freeRequest(req);
+        exit(EXIT_FAILURE);
     }
-    char* decodedbody = malloc(contentlength + 1);                      // MEMORY
+    memcpy(body, bodystart, bodylen);
+    char* decodedbody = malloc(bodylen * 3 + 1);                      // MEMORY
+    if (!decodedbody) {
+        fprintf(stderr, "decodedbody malloc failure\n");
+        free(body);
+        free(headersection);
+        freeRequest(req);
+        exit(EXIT_FAILURE);
+    }
     urldecode(decodedbody, body);
-    printf("decoded: %s\n", decodedbody);
+    // printf("decoded: %s\n", decodedbody);
     free(body);
+
     req->body = decodedbody;
     free(headersection);
     return req;
-
 }
 
 //========================================================================================
@@ -181,6 +198,7 @@ void freeHeader(struct Header* h)
 
 void freeRequest(struct Request* req)
 {
+    if (!req) return;
     free(req->url);
     free(req->version);
     freeHeader(req->headers);

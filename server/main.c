@@ -28,9 +28,7 @@
 #include "utils.h"
 #include "users.h"
 
-// #define PORT 8090
 #define PORT 8443
-// #define BUFFER_SIZE 4096
 #define BUFFER_SIZE 8192
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
@@ -116,16 +114,14 @@ int main(void)
 
             /* Attempt cert accept */
             if (SSL_accept(ssl) <= 0) {
-                ERR_print_errors_fp(stderr);
+                // ERR_print_errors_fp(stderr);
                 SSL_free(ssl);
                 close(client_fd);
                 exit(1);
             }
 
             // char buffer[BUFFER_SIZE] = {0};
-
             // int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
-            // printf("SSL: %s\n", (char*)ssl);
             // if (bRead <= 0) {
             //     ERR_print_errors_fp(stderr);
             //     SSL_shutdown(ssl);
@@ -133,15 +129,11 @@ int main(void)
             //     close(client_fd);
             //     exit(EXIT_FAILURE);
             // }
-            //
             // buffer[bRead] = '\0';
+
+            printf("\nbegin: read -> %s\n", clientip);
             int reqlen = 0;
             char* buffer = readFullRequest(ssl, &reqlen);
-            printf("RAW REQUEST:\n%s\n", buffer);
-            // for (int i = 0; i < bRead; i++) {
-            //     printf("%02x ", (unsigned char)buffer[i]);
-            // }
-            // printf("\n");
 
             /* Parse the request and store in Request structure req */
             // printf("%s\n", buffer);
@@ -153,21 +145,22 @@ int main(void)
                 close(client_fd);
                 exit(EXIT_FAILURE);
             }
+            printf("parsed\n");
 
             /* Handle that thang */
             handleRequest(t, ssl, req);
-            printf("[%s]: handled\n", req->url);
+            printf("[%s]: handled\t", req->url);
 
             /* Free the request */
             freeRequest(req);
-            free(buffer);
-            printf("req: freed\n");
+            printf("req: freed\t");
 
             /* Shutdown SSL, free SSL, close clientfd */
             SSL_shutdown(ssl);
             SSL_free(ssl);
             close(client_fd);
             printf("client: closed\n");
+            printf("end\n\n");
 
             exit(0);
 

@@ -19,7 +19,7 @@
 #include <openssl/evp.h>
 
 #include "utils.h"
-#include "video.h"
+// #include "video.h"
 
 #define BUFFER_SIZE 8192
 
@@ -139,13 +139,22 @@ char* readFullRequest(SSL* ssl, int* outlen)
         int bytes = SSL_read(ssl, buf + totalread, BUFFER_SIZE - totalread);
         if (bytes <= 0) break;
         totalread += bytes;
+
         headerend = findHeaderEnd(buf, totalread);
         if (headerend != -1) break;
     }
     if (headerend == -1) {
         *outlen = totalread;
         return strndup(buf, totalread);
+        // char* req = malloc(totalread + 1);
+        // memcpy(req, buf, totalread);
+        // req[totalread] = '\0';
+        // printf("WARNING: header end not found, duping what was found\n");
+        // return req;
     }
+
+    // printf("SUCCESS: header end found [%d]\n", headerend);
+
     char headers[headerend + 1];
     memcpy(headers, buf, headerend);
     headers[headerend] = '\0';
@@ -154,19 +163,21 @@ char* readFullRequest(SSL* ssl, int* outlen)
     int bodybytes = totalread - headerend;
     int toread = contentlength - bodybytes;
 
+    // int reqsize = headerend + contentlength;
     char* request = malloc(headerend + contentlength + 1);
-    memcpy(request, buf, BUFFER_SIZE - 1);
-    // memcpy(request, buf, totalread);
+    if (!request) return NULL;
+    memcpy(request, buf, totalread);
+    // memcpy(request, buf, headerend + contentlength);
 
     int offset = totalread;
-    while (toread > 0 && offset < headerend + contentlength) {
-        int bytes = SSL_read(ssl, request + offset, headerend + contentlength - offset);
+    while (toread > 0) { // && offset < headerend + contentlength) {
+        int bytes = SSL_read(ssl, request + offset, toread);
         if (bytes <= 0) break;
         offset += bytes;
         toread -= bytes;
     }
-    request[headerend + contentlength] = '\0';
-    *outlen = headerend + contentlength;
+    request[offset] = '\0';
+    *outlen = offset;
     return request;
 }
 
