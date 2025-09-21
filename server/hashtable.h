@@ -16,10 +16,10 @@ typedef struct Item {
 } Item;
 
 typedef struct Table {
+    Item** items;
     int base;
     int size;
     int count;
-    Item** items;
 } Table;
 
 //==================================================================================================
