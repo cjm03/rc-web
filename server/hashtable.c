@@ -70,7 +70,7 @@ Table* createTableSized(const int base)
     t->base = base;
     t->size = nextPrime(t->base);
     t->count = 0;
-    t->items = calloc((size_t)t->size, sizeof(Item*));
+    t->items = calloc(t->size, sizeof(Item*));
     // memset(t->items, 0, sizeof(t->items));
     return t;
 }

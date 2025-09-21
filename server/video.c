@@ -27,7 +27,6 @@
 // define
 //==========================================================================================================
 
-#define BUFFER_SIZE 4096
 #define CHUNK_SIZE 8192
 
 //==========================================================================================================
@@ -81,6 +80,7 @@ void serveClipPage(SSL* ssl, const char* clip_id)
 
     Flate* f = NULL;
     flateSetFile(&f, "public/clip.html");
+    flateSetVar(f, "clipname", clip_id, NULL);
     flateSetVar(f, "clip", vidurl, NULL);
 
     char* buf = flatePage(f);
@@ -186,7 +186,7 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
             bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
 
             if (bWrite <= 0) {
-                ERR_print_errors_fp(stderr);
+                // ERR_print_errors_fp(stderr);
                 break;
             }
 
@@ -196,6 +196,6 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
     }
 
     close(file_fd);
-    fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);
+    // fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);
     return;
 }

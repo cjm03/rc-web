@@ -1,41 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Clip Viewer</title>
-    <link rel="icon" type="image/png" href="public/favicon.png">
-    <style>
-        body {
-            font-family: sans-serif;
-            background: #121212;
-            color: #eee;
-            padding: 1em;
-        }
-        .container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-        }
-        video {
-            width: 100%;
-            height: auto;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div>
-        <nav>
-            <a href="/">Home</a>
-        </nav>
-    </div>
-    <h1>Now Playing</h1>
-    <div class="container">
-        <video controls autoplay>
-            <source src=##clip## type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
-</body>
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Clip Viewer</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" 
+            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link rel="icon" type="image/png" href="public/favicon.png">
+        <style>
+            body {
+                font-family: sans-serif;
+                background: #121212;
+                color: #eee;
+                /* padding: 1em; */
+            }
+            .container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                /* padding: 32px; */
+            }
+            video {
+                /* width: 100%; */
+                width: 75%;
+                height: auto;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <header>
+            <nav class="navbar navbar-expand border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+                <div class="container-fluid lh-0 py-3 mb-0">
+                    <a class="navbar-brand" href="/">stealthywombat.tech</a>
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/clipindex.html">clips</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
+                        </li>
+                    </ul>
+                    <form class="d-flex" role="search">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+                        <button class="btn btn-outline-primary" type="submit">Search</button>
+                    </form>
+                </div>
+            </nav>
+        </header>
+
+        <h1 class="text-align-left" style="padding-left: 468px; padding-top: 16px; padding-bottom: 12px; color: #6ea8fe;">"##clipname##"</h1>
+        <div class="container">
+            <video controls autoplay>
+                <source src=##clip## type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </body>
 </html>

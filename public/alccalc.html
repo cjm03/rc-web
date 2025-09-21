@@ -2,24 +2,66 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bottle Discounter</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" 
+            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <link rel="icon" type="image/png" href="../public/favicon.png">
+
+        <style>
+            body {
+                background: #121212;
+                color: #fff;
+            }
+            main {
+                background: #121212;
+            }
+            div {
+                background: #121212;
+                color: #fff;
+            }
+        </style>
+
     </head>
+
     <body>
-        <div>
-            <nav>
-                <a href="/">Home</a>
+
+        <header>
+            <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+                <div class="container-fluid lh-0 py-3 mb-0">
+                    <a class="navbar-brand" href="/">stealthywombat.tech</a>
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/clipindex.html">clips</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="#">kro-alc</a>
+                        </li>
+                    </ul>
+                    <!-- <form class="d-flex" role="search"> -->
+                    <!--     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/> -->
+                    <!--     <button class="btn btn-outline-primary" type="submit">Search</button> -->
+                    <!-- </form> -->
+                </div>
             </nav>
-        </div>
-        <h2>Enter Prices</h2>
-        <form action="/discount" method="POST">
+        </header>
+
+        <h2 style="padding-top: 8px;">Enter Prices</h2>
+        <form method="POST" enctype="application/x-www-form-urlencoded" action="/discount" data-bs-theme="dark">
             <input type="number" step="0.01" name="item1" placeholder="Item 1 Price" required><br>
             <input type="number" step="0.01" name="item2" placeholder="Item 2 Price" required><br>
             <input type="number" step="0.01" name="item3" placeholder="Item 3 Price" required><br>
             <input type="number" step="0.01" name="item4" placeholder="Item 4 Price" required><br>
             <input type="number" step="0.01" name="item5" placeholder="Item 5 Price" required><br>
             <input type="number" step="0.01" name="item6" placeholder="Item 6 Price" required><br><br>
-            <input type="submit" value="Calculate Discount">
+            <!-- <input type="submit" value="Calculate Discount"> -->
+            <input type="submit" value="Submit">
         </form>
     </body>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" 
+        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" 
+        crossorigin="anonymous"></script>
+
 </html

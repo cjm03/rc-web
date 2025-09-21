@@ -24,4 +24,9 @@ SSL_CTX* initSSLCTX(void);
 /*  */
 void loadCerts(SSL_CTX* ctx, const char* certFile, const char* keyFile);
 
+/*  */
+int findHeaderEnd(const char* buf, int len);
+int extractContentLength(const char* headers);
+char* readFullRequest(SSL* ssl, int* outlen);
+
 #endif // UTILS_H

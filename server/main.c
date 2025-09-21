@@ -28,9 +28,8 @@
 #include "utils.h"
 #include "users.h"
 
-// #define PORT 8090
 #define PORT 8443
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 8192
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
 
@@ -43,8 +42,8 @@ int main(void)
     printf("Table: loaded\n");
 
     /* Initialize and load Users table */
-    UsersTable* ut = createNewUsersTable();
-    insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
+    // UsersTable* ut = createNewUsersTable();
+    // insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
 
     /* Initialize OpenSSL and SSL context */
     SSL_CTX* ctx = initSSLCTX();
@@ -115,26 +114,29 @@ int main(void)
 
             /* Attempt cert accept */
             if (SSL_accept(ssl) <= 0) {
-                ERR_print_errors_fp(stderr);
+                // ERR_print_errors_fp(stderr);
                 SSL_free(ssl);
                 close(client_fd);
                 exit(1);
             }
 
-            char buffer[BUFFER_SIZE] = {0};
+            // char buffer[BUFFER_SIZE] = {0};
+            // int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
+            // if (bRead <= 0) {
+            //     ERR_print_errors_fp(stderr);
+            //     SSL_shutdown(ssl);
+            //     SSL_free(ssl);
+            //     close(client_fd);
+            //     exit(EXIT_FAILURE);
+            // }
+            // buffer[bRead] = '\0';
 
-            int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
-            if (bRead <= 0) {
-                ERR_print_errors_fp(stderr);
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                close(client_fd);
-                exit(EXIT_FAILURE);
-            }
-
-            buffer[bRead] = '\0';
+            printf("\nbegin: read -> %s\n", clientip);
+            int reqlen = 0;
+            char* buffer = readFullRequest(ssl, &reqlen);
 
             /* Parse the request and store in Request structure req */
+            // printf("%s\n", buffer);
             struct Request* req = parseRequest(buffer);
             if (!req) {
                 fprintf(stderr, "parser: fail\n");
@@ -143,20 +145,22 @@ int main(void)
                 close(client_fd);
                 exit(EXIT_FAILURE);
             }
+            printf("parsed\n");
 
             /* Handle that thang */
-            handleRequest(ut, t, ssl, req);
-            printf("[%s]: handled\n", req->url);
+            handleRequest(t, ssl, req);
+            printf("[%s]: handled\t", req->url);
 
             /* Free the request */
             freeRequest(req);
-            printf("req: freed\n");
+            printf("req: freed\t");
 
             /* Shutdown SSL, free SSL, close clientfd */
             SSL_shutdown(ssl);
             SSL_free(ssl);
             close(client_fd);
             printf("client: closed\n");
+            printf("end\n\n");
 
             exit(0);
 

@@ -19,6 +19,9 @@
 #include <openssl/evp.h>
 
 #include "utils.h"
+// #include "video.h"
+
+#define BUFFER_SIZE 8192
 
 /* decodes a string with url encoding */
 void urldecode(char* dest, const char* source) {
@@ -107,6 +110,76 @@ void loadCerts(SSL_CTX* ctx, const char* certFile, const char* keyFile)
     }
 }
 
+int findHeaderEnd(const char* buf, int len)
+{
+    for (int i = 0; i < len - 3; ++i) {
+        if (buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' && buf[i + 3] == '\n' ) {
+            return i + 4;
+        }
+    }
+    return -1;
+}
+
+int extractContentLength(const char* headers)
+{
+    const char* cl = strstr(headers, "Content-Length:");
+    if (!cl) return 0;
+    cl += strlen("Content-Length:");
+    while (*cl == ' ' || *cl == '\t') cl++;
+    return atoi(cl);
+}
+
+char* readFullRequest(SSL* ssl, int* outlen)
+{
+    char buf[BUFFER_SIZE];
+    int totalread = 0;
+    int headerend = -1;
+
+    while (totalread < BUFFER_SIZE) {
+        int bytes = SSL_read(ssl, buf + totalread, BUFFER_SIZE - totalread);
+        if (bytes <= 0) break;
+        totalread += bytes;
+
+        headerend = findHeaderEnd(buf, totalread);
+        if (headerend != -1) break;
+    }
+    if (headerend == -1) {
+        *outlen = totalread;
+        return strndup(buf, totalread);
+        // char* req = malloc(totalread + 1);
+        // memcpy(req, buf, totalread);
+        // req[totalread] = '\0';
+        // printf("WARNING: header end not found, duping what was found\n");
+        // return req;
+    }
+
+    // printf("SUCCESS: header end found [%d]\n", headerend);
+
+    char headers[headerend + 1];
+    memcpy(headers, buf, headerend);
+    headers[headerend] = '\0';
+    int contentlength = extractContentLength(headers);
+
+    int bodybytes = totalread - headerend;
+    int toread = contentlength - bodybytes;
+
+    // int reqsize = headerend + contentlength;
+    char* request = malloc(headerend + contentlength + 1);
+    if (!request) return NULL;
+    memcpy(request, buf, totalread);
+    // memcpy(request, buf, headerend + contentlength);
+
+    int offset = totalread;
+    while (toread > 0) { // && offset < headerend + contentlength) {
+        int bytes = SSL_read(ssl, request + offset, toread);
+        if (bytes <= 0) break;
+        offset += bytes;
+        toread -= bytes;
+    }
+    request[offset] = '\0';
+    *outlen = offset;
+    return request;
+}
 
 
 

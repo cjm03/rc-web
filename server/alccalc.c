@@ -31,6 +31,7 @@ Discount* createDiscountTable(void)
     t->orig = calloc(ITEMS, sizeof(float*) * 2);
     t->disc = calloc(ITEMS, sizeof(float*) * 2);
     t->newp = calloc(ITEMS, sizeof(float*) * 2);
+    t->totalorig = 0.0;
     t->totaldisc = 0.0;
     t->totalcost = 0.0;
     return t;
@@ -41,6 +42,7 @@ void calculateDiscount(Discount* t)
     for (int j = 0; j < ITEMS; j++) {
         t->disc[j] = t->orig[j] * DISCOUNT;
         t->newp[j] = t->orig[j] - t->disc[j];
+        t->totalorig += t->orig[j];
         t->totaldisc += t->disc[j];
         t->totalcost += t->newp[j];
     }
