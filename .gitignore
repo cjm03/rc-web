@@ -1,5 +1,7 @@
 media/
 logs/
+logs/serverip.log
+logs/serverlog.log
 ssl/
 ipdb/
 private/

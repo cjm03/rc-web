@@ -60,7 +60,7 @@ void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len)
 
 void logIP(const char* format, ...)
 {
-    FILE* log = fopen("logs/server-ip.log", "a");
+    FILE* log = fopen("logs/serverip.log", "a");
     if (!log) return;
 
     time_t now = time(NULL);
