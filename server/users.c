@@ -1,43 +1,25 @@
 // users.c
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <math.h>
 
 #include "users.h"
-#include "utils.h"
-#include "libbcrypt/bcrypt.h"
-
-static User DELETEDUSER = {NULL, NULL, {0}, {0}, NULL};
-
-// hash
-
-int uiHash(const char* username, const int a, const int m)
-{
-    long hash = 0;
-    int len = strlen(username);
-    for (int i = 0; i < len; i++) {
-        hash += (long)pow(a, len - (i + 1)) * username[i];
-        hash = hash % m;
-    }
-    return (int)hash;
-}
-
-int getUiHash(const char* username, const int size, const int attempt)
-{
-    const int hasha = uiHash(username, USER_PRIME1, size);
-    const int hashb = uiHash(username, USER_PRIME2, size);
-    return (hasha + (attempt * (hashb + 1))) % size;
-}
+#include "libargon2/argon2.h"
 
 // create
 
 UsersTable* createNewUsersTable(void)
 {
+    return createNewUsersTableSized(USERS_TABLE_SIZE);
+}
+
+UsersTable* createNewUsersTableSized(const int size)
+{
     UsersTable* ut = malloc(sizeof(UsersTable));
-    ut->size = USERS_TABLE_SIZE;
+    ut->size = size;
     ut->count = 0;
     ut->users = calloc(ut->size, sizeof(User*));
     return ut;
@@ -45,158 +27,115 @@ UsersTable* createNewUsersTable(void)
 
 User* createNewUser(const char* username, const char* password, const char* email)
 {
-    int ret;
-    User* NewUser = malloc(sizeof(User));
-    NewUser->Username = strdup(username);
-    NewUser->Email = strdup(email);
+    User* u = malloc(sizeof(User));
+    u->username = strdup(username);
+    u->email = strdup(email);
+    uint8_t hash1[HASHLEN];
+    uint8_t hash2[HASHLEN];
 
-    ret = bcrypt_gensalt(12, NewUser->Salt);
-    assert(ret == 0);
-    ret = bcrypt_hashpw(password, NewUser->Salt, NewUser->PasswordHash);
-    assert(ret == 0);
+    uint8_t salt[SALTLEN];
+    memset(salt, 0x00, SALTLEN);
+    // uint8_t salt[] = {0};
+    //
+    // for (int i = 0; i < SALTLEN; i++) {
+    //     salt[i] = (uint8_t)(rand() % 255);
+    // }
+    // printf("%s\n", salt);
 
-    if (verifyPasswordHash(password, NewUser->PasswordHash) == 1) {
-        fprintf(stderr, "password matches\n");
-        return NewUser;
-        // int index = uiHash(NewUser->Username, USER_PRIME1, USERS_TABLE_SIZE);
-        // if (ut->users[index] == NULL) {
-        //     ut->users[index] = NewUser;
-        // } else {
-        //     printf("INSERTION FAILED\n");
-        //     free(NewUser);
-        //     return NULL;
-        // }
-    } else {
-        printf("PASSWORD MATCH FAILED\n");
-        free(NewUser);
-        return NULL;
+    printf("pwd: %s\n", password);
+    uint8_t* pwd = (uint8_t*)strdup(password);
+    printf("%s\n", pwd);
+    uint32_t pwdlen = strlen((char*)pwd);
+    uint32_t t_cost = 2;
+    uint32_t m_cost = (1 << 16);
+    uint32_t parallelism = 1;
+    argon2i_hash_raw(t_cost, m_cost, parallelism, pwd, pwdlen, salt, SALTLEN, hash1, HASHLEN);
+    argon2_context ctx = {
+        hash2, HASHLEN, pwd, pwdlen, salt, SALTLEN, NULL, 0, NULL, 0, t_cost, m_cost, parallelism, parallelism,
+        ARGON2_VERSION_13, NULL, NULL, ARGON2_DEFAULT_FLAGS
+    };
+    int rc = argon2i_ctx(&ctx);
+    if (ARGON2_OK != rc) {
+        printf("Error: %s\n", argon2_error_message(rc));
+        exit(1);
     }
-    // printf("creatednewuser\n");
-    // return NewUser;
+    free(pwd);
+    printf("hash1: ");
+    for( int i=0; i<HASHLEN; ++i ) printf( "%02x", hash1[i] ); printf( "\nhash2: " );
+    for( int i=0; i<HASHLEN; ++i ) printf( "%02x", hash2[i] ); printf( "\n" );
+    if (memcmp(hash1, hash2, HASHLEN)) {
+        for (int i = 0; i < HASHLEN; ++i) {
+            printf("%02x", hash2[i]);
+        }
+        printf("hash failure, bailing\n");
+        freeUser(u);
+        exit(1);
+    }
+    int verify = argon2i_verify_ctx(&ctx, hash2);
+    if (verify != 0) {
+        printf("ctx verification failure, bailing\n");
+        freeUser(u);
+        exit(1);
+    }
+    printf("%zu %zu\n", strlen(hash1), strlen(hash2));
+    u->hash = hash2;
+    StrToHex(salt, u->salt, SALTLEN);
+    return u;
 }
 
 void insertUser(UsersTable* ut, const char* username, const char* password, const char* email)
 {
     User* new = createNewUser(username, password, email);
-    printf("%ld\n", strlen(new->PasswordHash));
-    int index = getUiHash(new->Username, ut->size, 0);
-    User* cur = ut->users[index];
-    int i = 1;
-    while (cur != NULL) {
-        if (cur != &DELETEDUSER) {
-            if (strcmp(cur->Username, username) == 0) {
-                deleteUser(cur);
-                ut->users[index] = new;
-                return;
-            }
-        }
-        index = getUiHash(new->Username, ut->size, i);
-        cur = ut->users[index];
-        i++;
-    }
-    ut->users[index] = new;
+    ut->users[ut->count] = *new;
     ut->count++;
-    printf("[%s] inserted\n", username);
-    return;
 }
 
-User* userSearch(UsersTable* ut, const char* username)
-{
-    int index = getUiHash(username, ut->size, 0);
-    User* user = ut->users[index];
-    int i = 1;
-    while (user != NULL) {
-        if (user != &DELETEDUSER) {
-            if (strcmp(user->Username, username) == 0) {
-                return user;
-            }
-        }
-        index = getUiHash(username, ut->size, i);
-        user = ut->users[index];
-        i++;
-    }
-    return NULL;
-}
+User* userSearch(UsersTable* ut, const char* username);
 
-void deleteUser(User* u)
+void freeUser(User* u)
 {
-    free(u->Username);
-    free(u->Email);
+    free(u->username);
+    free(u->email);
     free(u);
 }
 
-int verifyPasswordHash(const char* password, const char* hashedPassword)
+void printUser(UsersTable* ut, const char* username)
 {
-    int ret;
-
-    ret = bcrypt_checkpw(password, hashedPassword);
-    assert(ret != -1);
-
-    if (ret == 0) {
-        return 1;
-    } else {
-        return 0;
+    for (int i = 0; i < ut->size; i++) {
+        User cur = ut->users[i];
+        if (strncmp(cur.username, username, strlen(username)) == 0) {
+            printf("User %d\n%s\n%s\n%s\n%s\n", i, cur.username, cur.email, cur.hash, cur.salt);
+            return;
+        }
     }
+    printf("not found\n");
 }
 
+int verifyPasswordHash(const char* password, const char* hashedPassword);
+
+void StrToHex(const char* in, uint8_t *out, size_t length)
+{
+    for (size_t i = 0; i < length; ++i) {
+        out[i] = (uint8_t)in[i];
+    }
+}
 /////////////////////////////////
 // Save & Load to File
 /////////////////////////////////
 
-void saveUserInfoToFile(UsersTable* ut, const char* filename)
+void saveUserInfoToFile(UsersTable* ut, const char* filename);
+
+void loadUserInfoFromFile(const char* filename);
+
+int main(void)
 {
-    FILE* file = fopen(filename, "w");
-    if (!file) {
-        perror("fopen");
-        return;
-    }
-
-    for (int i = 0; i < USERS_TABLE_SIZE; i++) {
-        User* u = ut->users[i];
-        while (u) {
-            for (int j = 0; j < SALT_SIZE; j++) {
-                fprintf(file, "%02x", u->Salt[j]);
-            }
-            fprintf(file, ",");
-
-            for (int k = 0; k < BCRYPT_HASHSIZE; k++) {
-                fprintf(file, "%02x", u->PasswordHash[k]);
-            }
-            fprintf(file, ",%s,%s\n", u->Username, u->Email);
-
-            u = u->next;
-        }
-    }
-    fclose(file);
+    const char* username = "cjmoye";
+    const char* password = "bbvheysPFqnuAg1";
+    const char* email = "cjmoye@iu.edu";
+    UsersTable* ut = createNewUsersTable();
+    insertUser(ut, username, password, email);
+    printUser(ut, username);
 }
-
-void loadUserInfoFromFile(const char* filename)
-{
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        perror("fopen");
-        return;
-    }
-
-    char saltHex[SALT_SIZE * 2 + 1];
-    char hashHex[BCRYPT_HASHSIZE * 2 + 1];
-    char username[256];
-    char email[256];
-
-    while (fscanf(file, "%38s,%128s,%255[^,],%255s\n", saltHex, hashHex, username, email) == 4) {
-        User* new = malloc(sizeof(User));
-        new->Username = strdup(username);
-        new->Email = strdup(email);
-        hexStringToBytes(saltHex, (unsigned char*)new->Salt, SALT_SIZE);
-        hexStringToBytes(hashHex, (unsigned char*)new->PasswordHash, BCRYPT_HASHSIZE);
-
-        // TODO: Hash Username for index, then
-        // `new->next = UsersTable[index];`
-        // `UsersTable[index] = new;`
-    }
-    fclose(file);
-}
-
 
 
 

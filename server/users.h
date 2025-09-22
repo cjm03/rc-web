@@ -5,10 +5,11 @@
 #include <crypt.h>
 #include <time.h>
 
-#include "libbcrypt/bcrypt.h"
+#include "libargon2/argon2.h"
 
-#define USERS_TABLE_SIZE 1024
-#define SALT_SIZE 19
+#define USERS_TABLE_SIZE 32
+#define HASHLEN 32
+#define SALTLEN 16
 #define USER_PRIME1 10837
 #define USER_PRIME2 11863
 
@@ -17,29 +18,31 @@
 /////////////////////////////////////////////////
 
 typedef struct User {
-    char* Username;
-    char* Email;
-    char PasswordHash[BCRYPT_HASHSIZE];
-    struct User* next;
+    char* username;
+    char* email;
+    uint8_t* hash;
+    uint8_t* salt;
+    // char hash[HASHLEN];
+    // char salt[SALTLEN]
 } User;
 
 typedef struct UsersTable {
     int size;
     int count;
-    User** users;
+    User* users;
 } UsersTable;
 
 /////////////////////////////////////////////////
 // Functions
 /////////////////////////////////////////////////
 
-int uiHash(const char* username, const int a, const int m);
-int getUiHash(const char* username, const int size, const int attempt);
 UsersTable* createNewUsersTable(void);
+UsersTable* createNewUsersTableSized(const int size);
 User* createNewUser(const char* username, const char* password, const char* email);
 void insertUser(UsersTable* ut, const char* username, const char* password, const char* email);
 User* userSearch(UsersTable* ut, const char* username);
-void deleteUser(User* u);
+void freeUser(User* u);
 int verifyPasswordHash(const char* password, const char* hashedPassword);
+void StrToHex(const char* in, uint8_t* out, size_t length);
 
 #endif // USERS_H

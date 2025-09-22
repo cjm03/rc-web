@@ -15,6 +15,8 @@ void urldecode(char* dest, const char* source);
 /* string of hexadecimal to bytes */
 void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len);
 
+void StrToHex(const char* in, uint8_t* out, size_t length);
+
 /* logs client IP */
 void logIP(const char* format, ...);
 
