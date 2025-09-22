@@ -73,6 +73,62 @@ void serveFile(SSL* ssl, const char* filepath)
     return;
 }
 
+void serveHome(SSL* ssl, char* filepath, char* ip)
+{
+    Flate* f = NULL;
+    // flateSetFile(&f, "public/home.html");
+    flateSetFile(&f, filepath);
+    flateSetVar(f, "yoip", ip, NULL);
+    char* buffa = flatePage(f);
+    flateFreeMem(f);
+
+    size_t len = strlen(buffa);
+    char header[512];
+    snprintf(header, sizeof(header),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %ld\r\n"
+             "Connection: keep-alive\r\n\r\n", len);
+    SSL_write(ssl, header, strlen(header));
+    SSL_write(ssl, buffa, len);
+    free(buffa);
+    return;
+
+    // int file_fd = open(filepath, O_RDONLY);
+    // if (file_fd < 0) {
+    //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+    //     return;
+    // }
+    //
+    // struct stat st;
+    // fstat(file_fd, &st);
+    //
+    // char header[BUFFER_SIZE];
+    // snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
+    //
+    // SSL_write(ssl, header, strlen(header));
+    //
+    // char buffer[CHUNK_SIZE];
+    // ssize_t bRead, bWrite;
+    // off_t totalSent = 0;
+    //
+    // while ((bRead = read(file_fd, buffer, CHUNK_SIZE)) > 0) {
+    //     ssize_t sent = 0;
+    //     while (sent < bRead) {
+    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+    //         if (bWrite <= 0) {
+    //             ERR_print_errors_fp(stderr);
+    //             break;
+    //         }
+    //         sent += bWrite;
+    //         totalSent += bWrite;
+    //     }
+    // }
+    //
+    // close(file_fd);
+    // return;
+}
+
 void serveClipPage(SSL* ssl, const char* clip_id)
 {
     char vidurl[256];

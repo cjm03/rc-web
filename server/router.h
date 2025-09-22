@@ -28,7 +28,7 @@ void appendClipJson(Item* item, void* ctx);
 JsonBuffer bufJson(Table* t);
 
 /* handles request from the URI passed into it. also takes in the table and client socket descriptor */
-void handleRequest(Table* t, SSL* ssl, struct Request* req);
+void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
 // void handleRequest(UsersTable* ut, Table* t, SSL* ssl, struct Request* req);
 
 #endif // ROUTER_H

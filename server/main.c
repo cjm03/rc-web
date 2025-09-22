@@ -147,7 +147,7 @@ int main(void)
             printf("parsed\n");
 
             /* Handle that thang */
-            handleRequest(t, ssl, req);
+            handleRequest(t, ssl, req, clientip);
             printf("[%s]: handled\t", req->url);
 
             /* Free the request */

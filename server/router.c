@@ -65,7 +65,7 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-void handleRequest(Table* t, SSL* ssl, struct Request* req)
+void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
@@ -115,7 +115,8 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
 
         } else if (strncmp(resource, "/", 1) == 0 && strlen(resource) == 1) {
 
-            serveFile(ssl, "public/home.html");
+            serveHome(ssl, "public/home.html", ip);
+            // serveFile(ssl, "public/home.html");
             return;
 
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
@@ -173,6 +174,11 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req)
         } else if (strncmp(resource, "/private/meitei.png", 19) == 0) {
 
             serveImage(ssl, "private/meitei.png");
+            return;
+
+        } else if (strncmp(resource, "/private/gnome.jpeg", 19) == 0) {
+
+            serveImage(ssl, "private/gnome.jpeg");
             return;
 
         } else {

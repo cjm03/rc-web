@@ -15,6 +15,9 @@ void serveFile(SSL* ssl, const char* filepath);
 /* serves a html page with the passed clip_id in mp4 format */
 void serveClipPage(SSL* ssl, const char* clip_id);
 
+/*  */
+void serveHome(SSL* ssl, char* filepath, char* ip);
+
 /* serves a favicon */
 void serveFavicon(SSL* ssl, const char* imagepath);
 void serveImage(SSL* ssl, const char* filepath);
