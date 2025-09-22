@@ -6,9 +6,7 @@
         <meta charset='UTF-8'>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Discounts</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" 
-            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link rel="stylesheet" href="/public/css/bootstrap.css">
         <link rel="icon" type="image/png" href="public/favicon.png">
 
         <style>
@@ -35,17 +33,20 @@
                     <a class="navbar-brand" href="/">stealthywombat.tech</a>
                     <ul class="navbar-nav mb-0">
                         <li class="nav-item">
-                            <a class="nav-link" href="/clipindex.html">clips</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/public/alccalc.html">New Calculation</a>
+                            <form class="container-fluid">
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/clipindex.html">clips</a>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
+                                </button>
+                            </form>
                         </li>
                     </ul>
-                    <form class="d-flex" role="search">
-                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-                        <button class="btn btn-outline-primary" disabled>Search</button>
-                        <!-- <button class="btn btn-outline-primary" type="submit">Search</button> -->
-                    </form>
+                    <!-- <form class="d-flex" role="search"> -->
+                    <!--     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/> -->
+                    <!--     <button class="btn btn-outline-primary" disabled>Search</button> -->
+                    <!-- </form> -->
                 </div>
             </nav>
         </header>
@@ -78,9 +79,5 @@
         <div class="border-bottom"></div>
         <h3>After Discount : $##totalcost##</h3>
     </body>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" 
-        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" 
-        crossorigin="anonymous"></script>
 
 </html>

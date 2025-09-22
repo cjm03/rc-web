@@ -4,9 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>stealthywombat</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" 
-            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <link rel="stylesheet" href="/public/css/bootstrap.css">
         <link rel="icon" type="image/png" href="public/favicon.png">
         <style>
             body {
@@ -55,28 +53,36 @@
 
     </head>
 
+    <header>
+        <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+            <div class="container-fluid lh-0 py-3 mb-0">
+                <a class="navbar-brand" href="#">stealthywombat.tech</a>
+                <ul class="navbar-nav mb-0">
+                    <li class="nav-item">
+                        <form class="container-fluid">
+                            <button class="btn btn-sm btn-outline-primary" type="button">
+                                <a class="nav-link" href="/clipindex.html">clips</a>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" type="button">
+                                <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+                <!-- <form class="d-flex" role="search"> -->
+                <!--     <button class="btn btn-outline-primary me-2" type="button"> -->
+                <!--         <a class="nav-link" href="/clipindex.html">clips</a> -->
+                <!--     </button> -->
+                <!--     <button class="btn btn-outline-primary me-4" type="button"> -->
+                <!--         <a class="nav-link" href="/public/alccalc.html">kroalc</a> -->
+                <!--     </button> -->
+                <!--     <input class="form-control ms-2 me-2" type="search" placeholder="Search" aria-label="Search"/> -->
+                <!--     <button class="btn btn-outline-secondary" disabled>Search</button> -->
+                <!-- </form> -->
+            </div>
+        </nav>
+    </header>
     <body>
-
-        <header>
-            <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
-                <div class="container-fluid lh-0 py-3 mb-0">
-                    <a class="navbar-brand" href="#">stealthywombat.tech</a>
-                    <ul class="navbar-nav mb-0">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/clipindex.html">clips</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
-                        </li>
-                    </ul>
-                    <form class="d-flex" role="search">
-                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-                        <button class="btn btn-outline-primary" disabled>Search</button>
-                        <!-- <button class="btn btn-outline-primary" type="submit">Search</button> -->
-                    </form>
-                </div>
-            </nav>
-        </header>
 
         <main class="container">
             <div class="row g-5">
@@ -164,7 +170,4 @@
         </footer>
 
     </body>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" 
-        integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" 
-        crossorigin="anonymous"></script>
 </html>

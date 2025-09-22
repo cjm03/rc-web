@@ -119,6 +119,12 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
             // serveFile(ssl, "public/home.html");
             return;
 
+        } else if (strncmp(resource, "/public/css/bootstrap.css", 25) == 0) {
+
+            serveFile(ssl, "public/css/bootstrap.css");
+            serveFile(ssl, "public/css/bootstrap.css.map");
+            return;
+
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
 
             serveFile(ssl, "public/clipindex.html");

@@ -5,6 +5,8 @@ logs/serverlog.log
 ssl/
 ipdb/
 private/
+private/users
+public/css/bootstrap-5.3.8-dist
 rcw
 old
 dur.c

@@ -2,20 +2,54 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Login</title>
+        <link rel="stylesheet" href="/public/css/bootstrap.css">
         <link rel="icon" type="image/png" href="../public/favicon.png">
+        <style>
+            body {
+                background: #121212;
+                color: #fff;
+            }
+            main {
+                background: #121212;
+            }
+            div {
+                background: #121212;
+                color: #fff;
+            }
+        </style>
+
     </head>
+
     <body>
-        <div>
-            <nav>
-                <a href="/">Home</a>
+
+        <header>
+            <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+                <div class="container-fluid lh-0 py-3 mb-0">
+                    <a class="navbar-brand" href="/">stealthywombat.tech</a>
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item">
+                            <form class="container-fluid">
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/clipindex.html">clips</a>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
             </nav>
-        </div>
-        <h2>Login</h2>
-        <form action="/auth" method="POST">
+        </header>
+
+        <h2 style="padding-top: 8px;">Login</h2>
+
+        <form method="POST" enctype="application/x-www-form-urlencoded" action="/auth" data-bs-theme="dark">
             <input type="username" name="username" placeholder="Username" required><br>
             <input type="password" name="password" placeholder="Password" required><br>
-            <input type="submit" value="Login">
+            <input type="submit" value="Submit">
         </form>
         <p>Don't have an account? <a href="#">Sign Up</a></p>
     </body>

@@ -48,7 +48,18 @@ void serveFile(SSL* ssl, const char* filepath)
     fstat(file_fd, &st);
 
     char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
+
+    int fplen = strlen(filepath);
+    char* look = strstr(filepath, ".css");
+    if (look && filepath[fplen - 4] == '.') {
+        char* temp = malloc(strlen(filepath) + 5);
+        strcpy(temp, filepath);
+        strcat(temp, ".map");
+        snprintf(header, sizeof(header), CSS_OK, (long long)st.st_size, temp);
+        free(temp);
+    } else {
+        snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
+    }
 
     SSL_write(ssl, header, strlen(header));
 

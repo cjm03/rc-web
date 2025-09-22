@@ -19,7 +19,6 @@
 typedef struct User {
     char* Username;
     char* Email;
-    char Salt[BCRYPT_HASHSIZE];
     char PasswordHash[BCRYPT_HASHSIZE];
     struct User* next;
 } User;

@@ -6,7 +6,7 @@ SERVER=server/main.c server/router.c server/video.c server/hashtable.c server/ut
 LIBFLATE=server/libflate/flate.c
 LIBBCRYPT=-Iserver/libbcrypt -Lserver/libbcrypt -l:bcrypt.a
 # IPDB=-I/usr/local/include -L/usr/local/lib -lIP2Location ipdb/locate.c
-CFLAGS=-g -O0 -lm -lssl -lcrypto -lIP2Location -D_DEFAULT_SOURCE -Wall -Wextra -pedantic -std=c99
+CFLAGS=-g -O0 -lm -lssl -lcrypto -D_DEFAULT_SOURCE -Wall -Wextra -pedantic -std=c99
 rcw:
 	$(CC) $(SERVER) $(LIBFLATE) $(LIBBCRYPT) $(CFLAGS) -o rcw
 	# $(CC) $(SERVER) $(LIBFLATE) $(LIBBCRYPT) $(IPDB) $(CFLAGS) -o rcw
