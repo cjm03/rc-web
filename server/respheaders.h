@@ -6,7 +6,8 @@
 #define INTERNAL_ERROR "HTTP/1.1 500 Internal Server Error\r\n\r\n"
 #define VID_OK "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: video/mp4\r\nConnection: close\r\n\r\n"
 #define TXT_OK "HTTP/1.1 200 OK\r\nContent-Length: %lld\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n"
-#define CSS_OK "HTTP/1.1 200 OK\r\nContent-Length: %lld\r\nContent-Type: text/css\r\nSourceMap: %s\r\nConnection: close\r\n\r\n"
+// #define CSS_OK "HTTP/1.1 200 OK\r\nContent-Length: %lld\r\nContent-Type: text/css\r\nSourceMap: %s\r\nConnection: close\r\n\r\n"
+#define CSS_OK "HTTP/1.1 200 OK\r\nContent-Length: %lld\r\nContent-Type: text/css\r\nConnection: close\r\n\r\n"
 #define APP_OK "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n"
 #define ICO_OK "HTTP/1.1 200 OK\r\nContent-Length: %zu\r\nContent-Type: image/png\r\nConnection: close\r\n\r\n"
 

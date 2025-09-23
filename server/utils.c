@@ -8,6 +8,7 @@
 // include
 //==================
 
+// #define _DEFAULT_SOURCE
 #include <ctype.h>
 #include <openssl/evp.h>
 #include <stdio.h>
@@ -59,19 +60,19 @@ void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len)
 
 void SaltGen(void)
 {
-    CSPRNG prng;
-    const char* saltHex;
-    const char* saltB64;
+    // CSPRNG prng;
+    // const char* saltHex;
+    // const char* saltB64;
 
-    prng = createCSPRNG();
+    // prng = createCSPRNG();
 
-    saltHex = CSPRNGgenRandom(prng, 16, "hex");
-    printf("16-byte salt as hex: %s\n", saltHex);
+    // saltHex = CSPRNGgenRandom(prng, 16, "hex");
+    // printf("16-byte salt as hex: %s\n", saltHex);
 
-    saltB64 = CSPRNGgenRandom(prng, 16, "base64");
-    printf("16-byte salt as base64: %s\n", saltB64);
+    // saltB64 = CSPRNGgenRandom(prng, 16, "base64");
+    // printf("16-byte salt as base64: %s\n", saltB64);
 
-    destroyCSPRNG();
+    // destroyCSPRNG();
 }
 
 

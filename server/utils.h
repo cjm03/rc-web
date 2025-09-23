@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+// #define _DEFAULT_SOURCE
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>

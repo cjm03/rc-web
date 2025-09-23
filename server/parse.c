@@ -5,6 +5,7 @@
  *  Request holds the method, the URI (url), the version, the body, and the headers:
  *      The headers are stored in a struct Header holding the header name, associated value, and a pointer to the next header.
 */
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

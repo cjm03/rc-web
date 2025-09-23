@@ -52,11 +52,11 @@ void serveFile(SSL* ssl, const char* filepath)
     int fplen = strlen(filepath);
     char* look = strstr(filepath, ".css");
     if (look && filepath[fplen - 4] == '.') {
-        char* temp = malloc(strlen(filepath) + 5);
-        strcpy(temp, filepath);
-        strcat(temp, ".map");
-        snprintf(header, sizeof(header), CSS_OK, (long long)st.st_size, temp);
-        free(temp);
+        // char* temp = malloc(strlen(filepath) + 5);
+        // strcpy(temp, filepath);
+        // strcat(temp, ".map");
+        snprintf(header, sizeof(header), CSS_OK, (long long)st.st_size);
+        // free(temp);
     } else {
         snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
     }
@@ -105,39 +105,6 @@ void serveHome(SSL* ssl, char* filepath, char* ip)
     free(buffa);
     return;
 
-    // int file_fd = open(filepath, O_RDONLY);
-    // if (file_fd < 0) {
-    //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-    //     return;
-    // }
-    //
-    // struct stat st;
-    // fstat(file_fd, &st);
-    //
-    // char header[BUFFER_SIZE];
-    // snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
-    //
-    // SSL_write(ssl, header, strlen(header));
-    //
-    // char buffer[CHUNK_SIZE];
-    // ssize_t bRead, bWrite;
-    // off_t totalSent = 0;
-    //
-    // while ((bRead = read(file_fd, buffer, CHUNK_SIZE)) > 0) {
-    //     ssize_t sent = 0;
-    //     while (sent < bRead) {
-    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
-    //         if (bWrite <= 0) {
-    //             ERR_print_errors_fp(stderr);
-    //             break;
-    //         }
-    //         sent += bWrite;
-    //         totalSent += bWrite;
-    //     }
-    // }
-    //
-    // close(file_fd);
-    // return;
 }
 
 void serveClipPage(SSL* ssl, const char* clip_id)
@@ -248,7 +215,8 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
         sscanf(range + 6, "%ld-%ld", &start, &end);
         if (end == 0 || end >= filesize) end = filesize - 1;
     }
-    off_t contentlength = end - start + 1;
+    // off_t contentlength = end - start + 1;
+    off_t contentlength = end - start;
     lseek(file_fd, start, SEEK_SET);
 
     char header[BUFFER_SIZE];
@@ -258,8 +226,8 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
              "Content-Length: %ld\r\n"
              "Content-Range: bytes %ld-%ld/%ld\r\n"
              "Accept-Ranges: bytes\r\n"
-             "Connection: close\r\n\r\n",
-             contentlength, start, end, filesize);
+             "Connection: keep-alive\r\n\r\n",
+             contentlength, start, end, st.st_size);
     SSL_write(ssl, header, strlen(header));
 
     signal(SIGPIPE, SIG_IGN);

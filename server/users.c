@@ -1,6 +1,6 @@
 // users.c
 
-#define _DEFAULT_SOURCE
+// #define _DEFAULT_SOURCE
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,7 @@
 #include "libargon2/argon2.h"
 
 #include "users.h"
+#include "utils.h"
 
 
 // create
@@ -154,13 +155,6 @@ void printUser(UsersTable* ut, const char* username)
 }
 
 int verifyPasswordHash(const char* password, const char* hashedPassword);
-
-void StrToHex(char* in, uint8_t *out, size_t length)
-{
-    for (size_t i = 0; i < length; ++i) {
-        out[i] = (uint8_t)in[i];
-    }
-}
 
 void
 hashArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p,

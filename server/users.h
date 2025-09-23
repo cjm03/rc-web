@@ -47,7 +47,6 @@ void freeUser(User* u);
 void freeUsersTable(UsersTable* ut);
 void printUser(UsersTable* ut, const char* username);
 int verifyPasswordHash(const char* password, const char* hashedPassword);
-void StrToHex(char* in, uint8_t* out, size_t length);
 void hashArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char* pwd,
                 char* salt, char* hexref, char* mcfref, argon2_type type);
 

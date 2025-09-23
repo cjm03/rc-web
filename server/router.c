@@ -69,6 +69,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
+    printf("Range: %s\n", range);
 
     //======================================================
     // Handle GET
@@ -122,8 +123,12 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
         } else if (strncmp(resource, "/public/css/bootstrap.css", 25) == 0) {
 
             serveFile(ssl, "public/css/bootstrap.css");
-            serveFile(ssl, "public/css/bootstrap.css.map");
             return;
+
+        } else if (strncmp(resource, "/public/css/bootstrap.css.map", 29) == 0) {
+
+            serveFile(ssl, "public/css/bootstrap.css.map");
+            return; 
 
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
 
