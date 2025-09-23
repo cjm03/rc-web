@@ -27,7 +27,7 @@
 #include "parse.h"
 #include "utils.h"
 
-#define PORT 8443
+#define PORT 443
 #define BUFFER_SIZE 8192
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
