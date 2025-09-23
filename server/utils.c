@@ -57,6 +57,23 @@ void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len)
     }
 }
 
+void SaltGen(void)
+{
+    CSPRNG prng;
+    const char* saltHex;
+    const char* saltB64;
+
+    prng = createCSPRNG();
+
+    saltHex = CSPRNGgenRandom(prng, 16, "hex");
+    printf("16-byte salt as hex: %s\n", saltHex);
+
+    saltB64 = CSPRNGgenRandom(prng, 16, "base64");
+    printf("16-byte salt as base64: %s\n", saltB64);
+
+    destroyCSPRNG();
+}
+
 
 void logIP(const char* format, ...)
 {

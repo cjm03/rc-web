@@ -10,8 +10,9 @@
 #define USERS_TABLE_SIZE 32
 #define HASHLEN 32
 #define SALTLEN 16
-#define USER_PRIME1 10837
-#define USER_PRIME2 11863
+#define ENCODEDLEN 128
+#define MAXUSERNAME 32
+#define MAXEMAIL 32
 
 /////////////////////////////////////////////////
 // Structures
@@ -38,11 +39,16 @@ typedef struct UsersTable {
 
 UsersTable* createNewUsersTable(void);
 UsersTable* createNewUsersTableSized(const int size);
-User* createNewUser(const char* username, const char* password, const char* email);
-void insertUser(UsersTable* ut, const char* username, const char* password, const char* email);
+// User* createNewUser(const char* username, const char* password, const char* email);
+void insertPopulateUser(UsersTable* ut, const char* username, const char* password, const char* email);
+User* createEmptyUser(void);
 User* userSearch(UsersTable* ut, const char* username);
 void freeUser(User* u);
+void freeUsersTable(UsersTable* ut);
+void printUser(UsersTable* ut, const char* username);
 int verifyPasswordHash(const char* password, const char* hashedPassword);
-void StrToHex(const char* in, uint8_t* out, size_t length);
+void StrToHex(char* in, uint8_t* out, size_t length);
+void hashArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char* pwd,
+                char* salt, char* hexref, char* mcfref, argon2_type type);
 
 #endif // USERS_H
