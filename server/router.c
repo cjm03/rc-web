@@ -69,7 +69,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
-    printf("Range: %s\n", range);
+    printf("routerRange: %s\n", range);
 
     //======================================================
     // Handle GET
@@ -110,7 +110,8 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
                 char rawid[256];
                 sscanf(idparam + 3, "%255[^ \r\n]", rawid);
                 urldecode(clipid, rawid);
-                serveClipPage(ssl, clipid);
+                Item* i = getItem(t, clipid);
+                serveClipPage(ssl, clipid, i->size); // , t->items->);
                 return;
             }
 

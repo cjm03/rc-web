@@ -27,7 +27,7 @@
 #include "parse.h"
 #include "utils.h"
 
-#define PORT 443
+#define PORT 8443
 #define BUFFER_SIZE 8192
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
@@ -135,7 +135,7 @@ int main(void)
             char* buffer = readFullRequest(ssl, &reqlen);
 
             /* Parse the request and store in Request structure req */
-            // printf("%s\n", buffer);
+            printf("%s\n", buffer);
             struct Request* req = parseRequest(buffer);
             if (!req) {
                 fprintf(stderr, "parser: fail\n");

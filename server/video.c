@@ -7,6 +7,7 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -107,7 +108,7 @@ void serveHome(SSL* ssl, char* filepath, char* ip)
 
 }
 
-void serveClipPage(SSL* ssl, const char* clip_id)
+void serveClipPage(SSL* ssl, const char* clip_id, size_t size)
 {
     char vidurl[256];
     snprintf(vidurl, sizeof(vidurl), "/clip?id=%s", clip_id);
@@ -126,6 +127,7 @@ void serveClipPage(SSL* ssl, const char* clip_id)
              "HTTP/1.1 200 OK\r\n"
              "Content-Type: text/html\r\n"
              "Content-Length: %ld\r\n"
+             "Accept-Ranges: bytes\r\n"
              "Connection: keep-alive\r\n\r\n", len);
 
     SSL_write(ssl, header, strlen(header));
@@ -207,53 +209,121 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
         close(file_fd);
         return;
     }
+
     off_t filesize = st.st_size;
-    off_t start = 0;            /* range min */
-    off_t end = filesize - 1;   /* range max */
+    off_t request_start = 0;        
+    off_t request_end;          
 
-    if (range && strncmp(range, "bytes=", 6) == 0) {
-        sscanf(range + 6, "%ld-%ld", &start, &end);
-        if (end == 0 || end >= filesize) end = filesize - 1;
+    size_t bRead = 0;
+    size_t bWrite = 0;
+
+    char* token = strchr(range, '-');
+    *token = ' ';
+    int verify = sscanf(range, "%ld %ld", &request_start, &request_end);
+    if (!token) {
+        if (verify != 2) {
+            char emergencyheader[512];
+            snprintf(emergencyheader, sizeof(emergencyheader), BAD_RANGE, filesize);
+            SSL_write(ssl, emergencyheader, strlen(emergencyheader));
+            close(file_fd);
+            return;
+        }
     }
-    // off_t contentlength = end - start + 1;
-    off_t contentlength = end - start;
-    lseek(file_fd, start, SEEK_SET);
 
-    char header[BUFFER_SIZE];
-    snprintf(header, sizeof(header),
-             "HTTP/1.1 206 Partial Content\r\n"
-             "Content-Type: video/mp4\r\n"
-             "Content-Length: %ld\r\n"
-             "Content-Range: bytes %ld-%ld/%ld\r\n"
-             "Accept-Ranges: bytes\r\n"
-             "Connection: keep-alive\r\n\r\n",
-             contentlength, start, end, st.st_size);
+    size_t requestlength = request_end - request_start + 1;
+    lseek(file_fd, request_start, SEEK_SET);                                
+
+    char header[BUFFER_SIZE];                                               
+    snprintf(header, sizeof(header), PARTIAL, requestlength, request_start, request_end, filesize);
     SSL_write(ssl, header, strlen(header));
 
     signal(SIGPIPE, SIG_IGN);
 
-    char buffer[CHUNK_SIZE];
-    off_t remaining = contentlength;
-    off_t totalSent = 0;
-    ssize_t bRead, bWrite;
-
-    while (remaining > 0 && (bRead = read(file_fd, buffer, sizeof(buffer))) > 0) {
-
-        ssize_t sent = 0;
-
-        while (sent < bRead) {
-
-            bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
-
-            if (bWrite <= 0) {
-                // ERR_print_errors_fp(stderr);
-                break;
-            }
-
-            sent += bWrite;
-            totalSent += bWrite;
-        }
+    // unsigned char* buffer = malloc(CHUNK_SIZE + 1);
+    unsigned char* buffer = (unsigned char*)malloc(requestlength + 1);
+    if (!buffer) {
+        fprintf(stderr, "uchar buf failure\n");
+        exit(EXIT_FAILURE);
+        close(file_fd);
     }
+    memset(buffer, 0, requestlength + 1);
+;
+    while (bRead < requestlength) {
+        bRead = read(file_fd, buffer, requestlength);
+    }
+
+    if (bRead <= 0) {
+        fprintf(stderr, "bRead\n");
+    }
+
+    while (bWrite < requestlength) {
+        bWrite = SSL_write(ssl, buffer, bRead);
+    }
+
+    if (bWrite <= 0) {
+        ERR_print_errors_fp(stderr);
+    }
+
+
+    // bRead = read(file_fd, buffer, requestlength);
+    // if (bRead <= 0) {
+    //     fprintf(stderr, "bRead\n");
+    // }
+    // bWrite = SSL_write(ssl, buffer, bRead);
+    // if (bWrite <= 0) {
+    //     ERR_print_errors_fp(stderr);
+    // }
+
+
+    // while ((bRead = read(file_fd, buffer, requestlength)) < requestlength) {
+    //     ssize_t sent = 0;
+    //     while (sent < bRead) {
+    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+    //         if (bWrite <= 0) {
+    //             ERR_print_errors_fp(stderr); // fprintf(stderr, "bWrite wrote [%zu] bytes instead of [%zu] bytes\n", bWrite, remaining);
+    //             break;
+    //         }
+    //         sent += bWrite;
+    //     }
+    // }
+
+
+
+    // while (remaining > 0 && (bRead = read(file_fd, buffer, CHUNK_SIZE)) > 0) {
+    //     totalsent = 0;
+    //     while (totalsent < bRead) {
+    //         bWrite = SSL_write(ssl, buffer + totalsent, bRead - totalsent);
+    //         if (bWrite <= 0) {
+    //             ERR_print_errors_fp(stderr); // fprintf(stderr, "bWrite wrote [%zu] bytes instead of [%zu] bytes\n", bWrite, remaining);
+    //             break;
+    //         }
+    //         totalsent += bWrite;
+    //     }
+
+        // remaining -= bRead;
+        // totalsent += bWrite; 
+        // memset(buffer, 0, CHUNK_SIZE + 1);
+        // lseek(file_fd, bRead, SEEK_SET);                                // Requested Length
+        
+        // totalsent += bWrite;
+        // remaining -= totalsent;
+        // printf("bW: %lu bR: %zu rem: %zu ts: %zu\n", bWrite, bRead, remaining, totalsent);
+    // }
+    free(buffer);
+    printf("Read: %lu\nWrite: %lu\n", bRead, bWrite);
+
+    // while (remaining > 0 && (bRead = read(file_fd, buffer, sizeof(buffer))) > 0) {
+    //     ssize_t sent = 0;
+    //     while (sent < bRead) {
+    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+    //         if (bWrite <= 0) {
+    //             // ERR_print_errors_fp(stderr);
+    //             break;
+    //         }
+    //         sent += bWrite;
+    //         totalSent += bWrite;
+    //     }
+    // }
 
     close(file_fd);
     // fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);

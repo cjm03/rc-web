@@ -39,12 +39,20 @@ const char* getHeaderValue(Request* req, const char* header)
     char* value = NULL;
     struct Header* cur = req->headers;
     while (cur != NULL) {
-        if (strncmp(cur->name, header, strlen(header)) == 0) {
+        if (strncmp(header, "Range", 5) == 0) {
+            if (strncmp(cur->name, header, strlen(header)) == 0) {
+                value = strdup(cur->value + 6);
+                return value;
+            } else {
+                cur = cur->next;
+            }
+        } else if (strncmp(cur->name, header, strlen(header)) == 0) {
             value = strdup(cur->value);
             return value;
         } else {
             cur = cur->next;
         }
+        // printRequest(req);
     }
     return NULL;
 

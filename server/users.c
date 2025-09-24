@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <openssl/rand.h>
 
 #include "libargon2/argon2.h"
 
 #include "users.h"
-#include "utils.h"
+// #include "utils.h"
 
 
 // create
@@ -29,7 +30,7 @@ UsersTable* createNewUsersTableSized(const int size)
     return ut;
 }
 
-void insertPopulateUser(UsersTable* ut, const char* username, const char* password, const char* email)
+void createInsertPopulateUser(UsersTable* ut, const char* username, const char* password, const char* email)
 {
     User* u = createEmptyUser();
 
@@ -157,7 +158,7 @@ void printUser(UsersTable* ut, const char* username)
 int verifyPasswordHash(const char* password, const char* hashedPassword);
 
 void
-hashArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p,
+testArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p,
            char* pwd, char* salt, char* hexref, char* mcfref, argon2_type type)
 {
     unsigned char out[HASHLEN];
@@ -171,7 +172,7 @@ hashArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p,
     ret = argon2_hash(t, 1 << m, p, pwd, strlen(pwd), salt, strlen(salt), out, HASHLEN,
                       encoded, ENCODEDLEN, type, version);
     if (ret != ARGON2_OK) {
-        printf("error: argon2_hash, return val bad\n");
+        printf("error: argon2_hash, bad return val\n");
         exit(1);
     }
     for (i = 0; i < HASHLEN; ++i) {
@@ -215,16 +216,19 @@ void loadUserInfoFromFile(const char* filename);
 int main(void)
 {
     int ret;
+    unsigned char* randsalt = malloc(sizeof(char) * 16);
     unsigned char out[HASHLEN];
     char const* msg;
     int version = ARGON2_VERSION_13;
+    RAND_priv_bytes(randsalt, sizeof(char) * 16);
+    printf("\nRANDSALT:%s ]end\n\n", randsalt);
 
-    hashArgon2(version, 2, 16, 1, "bbvheysPFqnuAg1", "whatdoesthefoxdo",
+    testArgon2(version, 2, 16, 1, "bbvheysPFqnuAg1", "whatdoesthefoxdo",
                "cc47159dc2cbdb4e050f57dbb3ca7e94f478606fca00c65c75c08403ef3585e3",
                "$argon2i$v=19$m=65536,t=2,p=1$d2hhdGRvZXN0aGVmb3hkbw"
                "$zEcVncLL204FD1fbs8p+lPR4YG/KAMZcdcCEA+81heM", Argon2_i);
 
-    // hashArgon2(version, 2, 16, 1, "bbvheysPFqnuAg1", "whatdoesthefoxdo",
+    // testArgon2(version, 2, 16, 1, "bbvheysPFqnuAg1", "whatdoesthefoxdo",
     //            "31ea05320865cbdb93a36f8b823bbb14a8df6aa94725fd989e8eef5d2039135c",
     //            "$argon2i$v=19$m=16,t=2,p=1$d2hhdGRvZXN0aGVmb3hkbw"
     //            "$MeoFMghly9uTo2+Lgju7FKjfaqlHJf2Yno7vXSA5E1w", Argon2_i);
@@ -233,8 +237,8 @@ int main(void)
     // const char password[] = "bbvheysPFqnuAg1";
     // const char email[] = "cjmoye@iu.edu";
     // UsersTable* ut = createNewUsersTableSized(4);
-    // insertPopulateUser(ut, "cjmoye", "bbvheysPFqnuAg1", "cjmoye@iu.edu");
-    // insertPopulateUser(ut, username, password, email);
+    // createInsertPopulateUser(ut, "cjmoye", "bbvheysPFqnuAg1", "cjmoye@iu.edu");
+    // createInsertPopulateUser(ut, username, password, email);
     // printUser(ut, username);
     // freeUsersTable(ut);
 }

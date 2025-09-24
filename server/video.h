@@ -13,7 +13,7 @@
 void serveFile(SSL* ssl, const char* filepath);
 
 /* serves a html page with the passed clip_id in mp4 format */
-void serveClipPage(SSL* ssl, const char* clip_id);
+void serveClipPage(SSL* ssl, const char* clip_id, size_t size);
 
 /*  */
 void serveHome(SSL* ssl, char* filepath, char* ip);
