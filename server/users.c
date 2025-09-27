@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <string.h>
 #include <openssl/rand.h>
+#include <openssl/crypto.h>
 
 #include "libargon2/argon2.h"
 
@@ -51,8 +52,6 @@ void createInsertPopulateUser(UsersTable* ut, const char* username, const char* 
            ARGON2_VERSION_13, t_cost, m_cost, parallelism, password, salt);
 
 
-    // uint8_t* pwd = (uint8_t*)strdup(password);
-    // uint32_t pwdlen = strlen((char*)pwd);
 
 
     // argon2i_hash_raw(t_cost, m_cost, parallelism, password, strlen(password), salt, SALTLEN, out, HASHLEN, enc, ENCODEDLEN);
@@ -96,13 +95,13 @@ void createInsertPopulateUser(UsersTable* ut, const char* username, const char* 
     //     exit(1);
     // }
 
-    ret = argon2_verify(enc, password, strlen(password), Argon2_i);
+    // ret = argon2_verify(enc, password, strlen(password), Argon2_i);
     // int verify = argon2i_verify_ctx(&context, (char*)hash2);
-    if (ret != ARGON2_OK) {
-        printf("ctx verification failure, bailing\n");
-        freeUser(u);
-        exit(1);
-    }
+    // if (ret != ARGON2_OK) {
+    //     printf("ctx verification failure, bailing\n");
+    //     freeUser(u);
+    //     exit(1);
+    // }
 
     // u->hash = hash2;
     u->salt = salt;
@@ -204,6 +203,11 @@ testArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p,
     printf("PASS\n");
 }
 
+uint8_t* privateGeneration(void)
+{
+    OSSL_LIB_CTX* libctx = OSSL_LIB_CTX_new();
+}
+
 
 /////////////////////////////////
 // Save & Load to File
@@ -216,12 +220,15 @@ void loadUserInfoFromFile(const char* filename);
 int main(void)
 {
     int ret;
-    unsigned char* randsalt = malloc(sizeof(char) * 16);
+    unsigned char* xrandsalt = malloc(sizeof(char) * 16);
+    uint8_t yrandsalt[SALTLEN];
     unsigned char out[HASHLEN];
     char const* msg;
     int version = ARGON2_VERSION_13;
-    RAND_priv_bytes(randsalt, sizeof(char) * 16);
-    printf("\nRANDSALT:%s ]end\n\n", randsalt);
+    RAND_priv_bytes(xrandsalt, sizeof(char) * 16);
+    RAND_priv_bytes(yrandsalt, sizeof(uint8_t) * SALTLEN);
+    printf("\nxRANDSALT:%s ]end\n\n", xrandsalt);
+    printf("\nyRANDSALT:%s ]end\n\n", yrandsalt);
 
     testArgon2(version, 2, 16, 1, "bbvheysPFqnuAg1", "whatdoesthefoxdo",
                "cc47159dc2cbdb4e050f57dbb3ca7e94f478606fca00c65c75c08403ef3585e3",
@@ -241,6 +248,8 @@ int main(void)
     // createInsertPopulateUser(ut, username, password, email);
     // printUser(ut, username);
     // freeUsersTable(ut);
+    free(xrandsalt);
+    return 0;
 }
 
 

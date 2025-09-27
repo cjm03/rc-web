@@ -92,9 +92,9 @@ int main(void)
         }
 
         /* LOG */
-        char clientip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);
-        logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));
+        char clientip[INET_ADDRSTRLEN];                                                    // STORE IP
+        inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);                  // CONVERT IP
+        logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));               // laugh
 
         /* Concurrency */
         if (fork() == 0) {
@@ -109,7 +109,7 @@ int main(void)
                 exit(EXIT_FAILURE);
             }
 
-            SSL_set_fd(ssl, client_fd);
+            SSL_set_fd(ssl, client_fd);     // ssl's sissy la la filedes
 
             /* Attempt cert accept */
             if (SSL_accept(ssl) <= 0) {
@@ -119,23 +119,13 @@ int main(void)
                 exit(1);
             }
 
-            // char buffer[BUFFER_SIZE] = {0};
-            // int bRead = SSL_read(ssl, buffer, BUFFER_SIZE - 1);
-            // if (bRead <= 0) {
-            //     ERR_print_errors_fp(stderr);
-            //     SSL_shutdown(ssl);
-            //     SSL_free(ssl);
-            //     close(client_fd);
-            //     exit(EXIT_FAILURE);
-            // }
-            // buffer[bRead] = '\0';
 
-            printf("\nbegin: read -> %s\n", clientip);
+            printf("\nGET DOWN -> %s\t", clientip);
             int reqlen = 0;
             char* buffer = readFullRequest(ssl, &reqlen);
 
             /* Parse the request and store in Request structure req */
-            printf("%s\n", buffer);
+            // printf("%s\n", buffer);
             struct Request* req = parseRequest(buffer);
             if (!req) {
                 fprintf(stderr, "parser: fail\n");
@@ -144,22 +134,18 @@ int main(void)
                 close(client_fd);
                 exit(EXIT_FAILURE);
             }
-            printf("parsed\n");
 
             /* Handle that thang */
             handleRequest(t, ssl, req, clientip);
-            printf("[%s]: handled\t", req->url);
+            printf("wanted [%s]: handled\n", req->url);
 
             /* Free the request */
             freeRequest(req);
-            printf("req: freed\t");
 
             /* Shutdown SSL, free SSL, close clientfd */
             SSL_shutdown(ssl);
             SSL_free(ssl);
             close(client_fd);
-            printf("client: closed\n");
-            printf("end\n\n");
 
             exit(0);
 

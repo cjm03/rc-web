@@ -58,24 +58,6 @@ void hexStringToBytes(const char* hexstr, unsigned char* buffer, size_t len)
     }
 }
 
-void SaltGen(void)
-{
-    // CSPRNG prng;
-    // const char* saltHex;
-    // const char* saltB64;
-
-    // prng = createCSPRNG();
-
-    // saltHex = CSPRNGgenRandom(prng, 16, "hex");
-    // printf("16-byte salt as hex: %s\n", saltHex);
-
-    // saltB64 = CSPRNGgenRandom(prng, 16, "base64");
-    // printf("16-byte salt as base64: %s\n", saltB64);
-
-    // destroyCSPRNG();
-}
-
-
 void logIP(const char* format, ...)
 {
     FILE* log = fopen("logs/serverip.log", "a");
@@ -106,7 +88,8 @@ void logIP(const char* format, ...)
 SSL_CTX* initSSLCTX(void)
 {
     SSL_library_init();
-    OpenSSL_add_all_algorithms();
+    // OpenSSL_add_all_algorithms();
+    OpenSSL_add_ssl_algorithms();
     SSL_load_error_strings();
     const SSL_METHOD* method = TLS_server_method();
     SSL_CTX* ctx = SSL_CTX_new(method);
@@ -164,14 +147,7 @@ char* readFullRequest(SSL* ssl, int* outlen)
     if (headerend == -1) {
         *outlen = totalread;
         return strndup(buf, totalread);
-        // char* req = malloc(totalread + 1);
-        // memcpy(req, buf, totalread);
-        // req[totalread] = '\0';
-        // printf("WARNING: header end not found, duping what was found\n");
-        // return req;
     }
-
-    // printf("SUCCESS: header end found [%d]\n", headerend);
 
     char headers[headerend + 1];
     memcpy(headers, buf, headerend);
@@ -181,11 +157,9 @@ char* readFullRequest(SSL* ssl, int* outlen)
     int bodybytes = totalread - headerend;
     int toread = contentlength - bodybytes;
 
-    // int reqsize = headerend + contentlength;
     char* request = malloc(headerend + contentlength + 1);
     if (!request) return NULL;
     memcpy(request, buf, totalread);
-    // memcpy(request, buf, headerend + contentlength);
 
     int offset = totalread;
     while (toread > 0) { // && offset < headerend + contentlength) {

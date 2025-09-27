@@ -37,16 +37,26 @@ typedef struct UsersTable {
 // Functions
 /////////////////////////////////////////////////
 
+/* Table */
 UsersTable* createNewUsersTable(void);
 UsersTable* createNewUsersTableSized(const int size);
-// User* createNewUser(const char* username, const char* password, const char* email);
+
+/* User */
 void createInsertPopulateUser(UsersTable* ut, const char* username, const char* password, const char* email);
 User* createEmptyUser(void);
+
 User* userSearch(UsersTable* ut, const char* username);
+
+/* Get rid of shit */
 void freeUser(User* u);
 void freeUsersTable(UsersTable* ut);
+
+/* print */
 void printUser(UsersTable* ut, const char* username);
+
+/* Crypto-shit */
 int verifyPasswordHash(const char* password, const char* hashedPassword);
+uint8_t* privateGeneration();
 void testArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char* pwd,
                 char* salt, char* hexref, char* mcfref, argon2_type type);
 

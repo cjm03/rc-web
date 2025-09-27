@@ -9,6 +9,9 @@
 
 #define BUFFER_SIZE 8192
 
+/* */
+void serveAnyFile(SSL* ssl, const char* filepath, const char* hdr);
+
 /* serves a raw file at passed filepath to passed client socket descriptor */
 void serveFile(SSL* ssl, const char* filepath);
 

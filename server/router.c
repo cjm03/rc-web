@@ -69,7 +69,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 {
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
-    printf("routerRange: %s\n", range);
 
     //======================================================
     // Handle GET
@@ -104,7 +103,8 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
         } else if (strncmp(resource, "/media?id=", 10) == 0 && strlen(resource) > 10) {
 
             const char* idparam = strstr(resource, "id=");
-            /* you should make this wizardry into a function */
+
+
             if (idparam) {
                 char clipid[256];
                 char rawid[256];
@@ -133,7 +133,8 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
 
-            serveFile(ssl, "public/clipindex.html");
+            serveAnyFile(ssl, "public/clipindex.html", TXT_OK);
+            // serveFile(ssl, "public/clipindex.html");
             return;
 
         } else if (strncmp(resource, "/api/clips", 10) == 0 && strlen(resource) == 10) {
@@ -195,53 +196,14 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
         } else {
 
-            printf("%s %s\n", NOT_FOUND, resource);
-
+            printf("%s %s ", "error:", resource);
             SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-
             return;
         }
     } else if (req->method == POST) {
 
         const char* postresource = req->url;
 
-        // if (strncmp(postresource, "/auth", 5) == 0) {
-        //
-        //     char* decoded = req->body;
-        //     char* username;
-        //     char* password;
-        //
-        //     printf("DECODED: %s\n", decoded);
-        //
-        //     const char delim[] = "&=";
-        //     char* token = strtok(decoded, delim);
-        //     token = strtok(NULL, delim);
-        //     username = token;
-        //     token = strtok(NULL, delim);
-        //     token = strtok(NULL, delim);
-        //     password = token;
-        //
-        //     printf("%s | %s\n", username, password);
-        //
-        //     User* check = userSearch(ut, username);
-        //     if (!check) {
-        //         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-        //     }
-        //     int verify = verifyPasswordHash(password, check->PasswordHash);
-        //     if (verify == 1) {
-        //         serveFile(ssl, "public/temp.html");
-        //     } else {
-        //         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-        //     }
-        //
-        //     free(decoded);
-        //     free(username);
-        //     free(password);
-        //     free(token);
-        //     return;
-        //
-
-        // } else if (strncmp(postresource, "/discount", 9) == 0) {
         if (strncmp(postresource, "/discount", 9) == 0) {
 
             // printRequest(req);
@@ -269,8 +231,6 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
                 snprintf(temp1, 16, "%.2f", t->orig[k]);
                 snprintf(temp2, 16, "%.2f", t->newp[k]);
                 snprintf(temp3, 16, "%.2f", t->disc[k]);
-                // snprintf(temp2, 16, "%.2f", t->disc[k]);
-                // snprintf(temp3, 16, "%.2f", t->newp[k]);
 
                 /* load temps into flate equivalent */
                 flateSetVar(f, "indexnum", buffer, NULL);
@@ -338,8 +298,10 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
             return;
         }
     } else {
-        printf("%s NOT FOUND\n", req->url);
+
+        printf("%s %s ", "error:", req->url);
         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
         return;
+
     }
 }

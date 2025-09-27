@@ -34,6 +34,45 @@
 // functions
 //==========================================================================================================
 
+void serveAnyFile(SSL* ssl, const char* filepath, const char* hdr)
+{
+    int file_fd = open(filepath, O_RDONLY);
+    if (file_fd < 0) {
+        SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+        return;
+    }
+    
+    struct stat st;
+    fstat(file_fd, &st);
+
+    char header[BUFFER_SIZE];
+
+    snprintf(header, sizeof(header), hdr, (long long)st.st_size);
+
+    SSL_write(ssl, header, strlen(header));
+
+    char buffer[CHUNK_SIZE];
+    ssize_t bRead, bWrite;
+    off_t totalSent = 0;
+
+    while ((bRead = read(file_fd, buffer, CHUNK_SIZE)) > 0) {
+        ssize_t sent = 0;
+        while (sent < bRead) {
+            bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+            if (bWrite <= 0) {
+                ERR_print_errors_fp(stderr);
+                break;
+            }
+            sent += bWrite;
+            totalSent += bWrite;
+        }
+    }
+
+    close(file_fd);
+    return;
+}
+
+
 void serveFile(SSL* ssl, const char* filepath)
 {
     int file_fd = open(filepath, O_RDONLY);
@@ -42,7 +81,8 @@ void serveFile(SSL* ssl, const char* filepath)
         return;
     }
     //======================================================================================================
-    // Perform shakedown on the file. 404 if DNE. Get trustworthy info from the system like filesize.
+    // Perform shakedown on the file. 404 if DNE. 
+    // Get trustworthy info from the system like filesize.
     // Now, content length might be accurate. sendfile() is still retarded
     //======================================================================================================
     struct stat st;
@@ -53,11 +93,9 @@ void serveFile(SSL* ssl, const char* filepath)
     int fplen = strlen(filepath);
     char* look = strstr(filepath, ".css");
     if (look && filepath[fplen - 4] == '.') {
-        // char* temp = malloc(strlen(filepath) + 5);
-        // strcpy(temp, filepath);
-        // strcat(temp, ".map");
+
         snprintf(header, sizeof(header), CSS_OK, (long long)st.st_size);
-        // free(temp);
+
     } else {
         snprintf(header, sizeof(header), TXT_OK, (long long)st.st_size);
     }
@@ -177,7 +215,6 @@ void serveImage(SSL* ssl, const char* filepath)
     char header[512];
     snprintf(header, sizeof(header), ICO_OK, filesize);
     SSL_write(ssl, header, strlen(header));
-    // char storethathoe[32768];
     char storethathoe[filesize + 1];
     read(img, storethathoe, sizeof(storethathoe));
     SSL_write(ssl, storethathoe, filesize);
@@ -190,6 +227,7 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
 { // Devil function. Biggest hassle.
     /* Consult hash table for verification */
     Item* clip = getItem(t, clip_id);
+    printf("%s\n", clip->path);
     if (!clip) {
         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
         return;
@@ -214,23 +252,20 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
     off_t request_start = 0;        
     off_t request_end;          
 
-    size_t bRead = 0;
-    size_t bWrite = 0;
+    ssize_t bRead = 0;
+    ssize_t bWrite = 0;
 
+    printf("Range: %s\n", range);
     char* token = strchr(range, '-');
     *token = ' ';
+    printf("Range: %s\n", range);
     int verify = sscanf(range, "%ld %ld", &request_start, &request_end);
-    if (!token) {
-        if (verify != 2) {
-            char emergencyheader[512];
-            snprintf(emergencyheader, sizeof(emergencyheader), BAD_RANGE, filesize);
-            SSL_write(ssl, emergencyheader, strlen(emergencyheader));
-            close(file_fd);
-            return;
-        }
+
+    if (verify != 2) {
+        request_end = 0;
     }
 
-    size_t requestlength = request_end - request_start + 1;
+    ssize_t requestlength = request_end - request_start + 1;
     lseek(file_fd, request_start, SEEK_SET);                                
 
     char header[BUFFER_SIZE];                                               
@@ -239,93 +274,20 @@ void serveVideo(Table* t, SSL* ssl, const char* clip_id, const char* range)
 
     signal(SIGPIPE, SIG_IGN);
 
-    // unsigned char* buffer = malloc(CHUNK_SIZE + 1);
-    unsigned char* buffer = (unsigned char*)malloc(requestlength + 1);
-    if (!buffer) {
-        fprintf(stderr, "uchar buf failure\n");
-        exit(EXIT_FAILURE);
-        close(file_fd);
+    char buffer[CHUNK_SIZE];
+    memset(buffer, 0, CHUNK_SIZE);
+
+    ssize_t rem = requestlength;
+    while (rem > 0 && (bRead = read(file_fd, buffer, sizeof(buffer))) > 0) {
+        ssize_t sent = 0;
+        while (sent < bRead) {
+            bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
+            if (bWrite <= 0) break;
+            sent += bWrite;
+        }
     }
-    memset(buffer, 0, requestlength + 1);
-;
-    while (bRead < requestlength) {
-        bRead = read(file_fd, buffer, requestlength);
-    }
-
-    if (bRead <= 0) {
-        fprintf(stderr, "bRead\n");
-    }
-
-    while (bWrite < requestlength) {
-        bWrite = SSL_write(ssl, buffer, bRead);
-    }
-
-    if (bWrite <= 0) {
-        ERR_print_errors_fp(stderr);
-    }
-
-
-    // bRead = read(file_fd, buffer, requestlength);
-    // if (bRead <= 0) {
-    //     fprintf(stderr, "bRead\n");
-    // }
-    // bWrite = SSL_write(ssl, buffer, bRead);
-    // if (bWrite <= 0) {
-    //     ERR_print_errors_fp(stderr);
-    // }
-
-
-    // while ((bRead = read(file_fd, buffer, requestlength)) < requestlength) {
-    //     ssize_t sent = 0;
-    //     while (sent < bRead) {
-    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
-    //         if (bWrite <= 0) {
-    //             ERR_print_errors_fp(stderr); // fprintf(stderr, "bWrite wrote [%zu] bytes instead of [%zu] bytes\n", bWrite, remaining);
-    //             break;
-    //         }
-    //         sent += bWrite;
-    //     }
-    // }
-
-
-
-    // while (remaining > 0 && (bRead = read(file_fd, buffer, CHUNK_SIZE)) > 0) {
-    //     totalsent = 0;
-    //     while (totalsent < bRead) {
-    //         bWrite = SSL_write(ssl, buffer + totalsent, bRead - totalsent);
-    //         if (bWrite <= 0) {
-    //             ERR_print_errors_fp(stderr); // fprintf(stderr, "bWrite wrote [%zu] bytes instead of [%zu] bytes\n", bWrite, remaining);
-    //             break;
-    //         }
-    //         totalsent += bWrite;
-    //     }
-
-        // remaining -= bRead;
-        // totalsent += bWrite; 
-        // memset(buffer, 0, CHUNK_SIZE + 1);
-        // lseek(file_fd, bRead, SEEK_SET);                                // Requested Length
-        
-        // totalsent += bWrite;
-        // remaining -= totalsent;
-        // printf("bW: %lu bR: %zu rem: %zu ts: %zu\n", bWrite, bRead, remaining, totalsent);
-    // }
-    free(buffer);
     printf("Read: %lu\nWrite: %lu\n", bRead, bWrite);
 
-    // while (remaining > 0 && (bRead = read(file_fd, buffer, sizeof(buffer))) > 0) {
-    //     ssize_t sent = 0;
-    //     while (sent < bRead) {
-    //         bWrite = SSL_write(ssl, buffer + sent, bRead - sent);
-    //         if (bWrite <= 0) {
-    //             // ERR_print_errors_fp(stderr);
-    //             break;
-    //         }
-    //         sent += bWrite;
-    //         totalSent += bWrite;
-    //     }
-    // }
-
     close(file_fd);
-    // fprintf(stderr, "Handled %s [%ld-%ld]\n", clip_id, start, end);
     return;
 }
