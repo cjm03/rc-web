@@ -35,6 +35,7 @@ JsonBuffer bufJson(Table* t);
  * Handles request from the URI passed into it. 
  * Also takes in the table and client socket descriptor.
 */
-void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
+// void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
+int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
 
 #endif // ROUTER_H

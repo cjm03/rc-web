@@ -125,7 +125,7 @@ int main(void)
             char* buffer = readFullRequest(ssl, &reqlen);
 
             /* Parse the request and store in Request structure req */
-            // printf("%s\n", buffer);
+            printf("%s\n", buffer);
             struct Request* req = parseRequest(buffer);
             if (!req) {
                 fprintf(stderr, "parser: fail\n");
@@ -136,18 +136,27 @@ int main(void)
             }
 
             /* Handle that thang */
-            handleRequest(t, ssl, req, clientip);
-            printf("wanted [%s]: handled\n", req->url);
+            if (handleRequest(t, ssl, req, clientip) != 0) {
+                fprintf(stderr, "access [%s] denied\n", req->url);
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                close(client_fd);
+                exit(0);
+            } else {
 
-            /* Free the request */
-            freeRequest(req);
+                printf("sent [%s]\n", req->url);
 
-            /* Shutdown SSL, free SSL, close clientfd */
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            close(client_fd);
+                /* Free the request */
+                freeRequest(req);
 
-            exit(0);
+                /* Shutdown SSL, free SSL, close clientfd */
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                close(client_fd);
+
+                exit(0);
+
+            }
 
         } else {
 

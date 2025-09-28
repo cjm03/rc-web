@@ -4,8 +4,11 @@
 #ifndef RCCRYPTO_H
 #define RCCRYPTO_H
 
-#define T_ARGON2_HASHLEN 32
-#define T_ARGON2_SALTLEN 16
-#define T_ARGON2_ENCODEDLEN 128
+#include <openssl/core.h>
+#include <openssl/rand.h>
+#include <openssl/crypto.h>
+#include <openssl/provider.h>
+#include <openssl/err.h>
+
 
 #endif // RCCRYPTO_H

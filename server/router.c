@@ -65,10 +65,12 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
+int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 {
+    int shouldI = 0;
     // Logic to obtain specific headers HERE!!!
     const char* range = getHeaderValue(req, "Range");
+
 
     //======================================================
     // Handle GET
@@ -79,8 +81,17 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
         if (strncmp(resource, "/clip?id=", 9) == 0) {
 
+
             /* Here, were stripping the first three characters (id=) from the URI because their filenames lack them */
             const char* idparam = strstr(resource, "id=");
+
+            char* idcheck = htSearch(t, idparam + 3);
+            if (idcheck != idparam) {
+                fprintf(stderr, "clip not found");
+                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+                shouldI = 1;
+                return shouldI;
+            }
 
             if (idparam) {
 
@@ -95,7 +106,7 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
                 serveVideo(t, ssl, clip_id, range);
 
-                return;
+                return shouldI;
             }
         /* Bad code, too hacky. Need to find a way to render both the html and mp4 in one route. Dont want to though */
 
@@ -104,6 +115,13 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
             const char* idparam = strstr(resource, "id=");
 
+            char* idcheck = htSearch(t, idparam + 3);
+            if (idcheck != idparam) {
+                fprintf(stderr, "clip not found");
+                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+                shouldI = 1;
+                return shouldI;
+            }
 
             if (idparam) {
                 char clipid[256];
@@ -112,30 +130,30 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
                 urldecode(clipid, rawid);
                 Item* i = getItem(t, clipid);
                 serveClipPage(ssl, clipid, i->size); // , t->items->);
-                return;
+                return shouldI;
             }
 
         } else if (strncmp(resource, "/", 1) == 0 && strlen(resource) == 1) {
 
             serveHome(ssl, "public/home.html", ip);
             // serveFile(ssl, "public/home.html");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/public/css/bootstrap.css", 25) == 0) {
 
             serveFile(ssl, "public/css/bootstrap.css");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/public/css/bootstrap.css.map", 29) == 0) {
 
             serveFile(ssl, "public/css/bootstrap.css.map");
-            return; 
+            return  0; 
 
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
 
             serveAnyFile(ssl, "public/clipindex.html", TXT_OK);
             // serveFile(ssl, "public/clipindex.html");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/api/clips", 10) == 0 && strlen(resource) == 10) {
 
@@ -162,43 +180,44 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
             }
 
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
 
             serveFile(ssl, "public/alccalc.html");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/public/favicon.png", 19) == 0) {
 
             serveFavicon(ssl, "public/favicon.png");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/private/phishy.png", 19) == 0) {
 
             serveImage(ssl, "private/phishy.png");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/private/basket.png", 19) == 0) {
 
             serveImage(ssl, "private/basket.png");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/private/meitei.png", 19) == 0) {
 
             serveImage(ssl, "private/meitei.png");
-            return;
+            return shouldI;
 
         } else if (strncmp(resource, "/private/gnome.jpeg", 19) == 0) {
 
             serveImage(ssl, "private/gnome.jpeg");
-            return;
+            return shouldI;
 
         } else {
 
             printf("%s %s ", "error:", resource);
             SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-            return;
+            shouldI = 1;
+            return shouldI;
         }
     } else if (req->method == POST) {
 
@@ -295,13 +314,17 @@ void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
             free(buf);
 
-            return;
+            return shouldI;
         }
     } else {
 
         printf("%s %s ", "error:", req->url);
         SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-        return;
+        shouldI = 1;
+        return shouldI;
 
     }
+    fprintf(stderr, "no route in handleRequest was hit");
+    shouldI = 1;
+    return shouldI;
 }

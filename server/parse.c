@@ -78,7 +78,7 @@ Request* parseRequest(const char* raw)
         seplen = 2;
     }
     if (!bodystart) {
-        fprintf(stderr, "malformed request, bailing");
+        fprintf(stderr, "malformed request, bailing [%s]", bodystart);
         freeRequest(req);
         return NULL;
         // exit(EXIT_FAILURE);
