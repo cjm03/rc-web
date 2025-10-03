@@ -12,11 +12,20 @@
 #define HASHLEN 32
 #define SALTLEN 16
 #define ENCODEDLEN 108
+#define MAXRAWCRED 32
 
 
 /////////////////////////////////////////////////
 // Structures
 /////////////////////////////////////////////////
+
+
+typedef struct utemp {
+    char* u;
+    char* p;
+} utemp;
+
+utemp* parseLogin(char* toparse);
 
 /* 
  * a single User
@@ -76,7 +85,7 @@ int storageGetHash(const char* s, const int users, const int attempt);
  * create the table storing users
  * generates MAXUSERS Users
 */
-uTable* createTable(void);
+uTable* createuTable(void);
 
 /*
  * create a User

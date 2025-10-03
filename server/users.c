@@ -17,12 +17,34 @@
 #include "libargon2/argon2.h"
 #include "users.h"
 
-struct uptemp {
-    char* u;
-    char* p;
-};
-
-struct uptemp* parseLogin();
+utemp* parseLogin(char* toparse)
+{
+    utemp* utmp = malloc(sizeof(utemp));
+    utmp->u = malloc(sizeof(char) * MAXRAWCRED);
+    utmp->p = malloc(sizeof(char) * MAXRAWCRED);
+    char delim[2] = "&";
+    char* token = strtok(toparse, delim);
+    char* eq = strchr(token, '=');
+    if (strlen(eq) >= 32) {
+        fprintf(stderr, "POST data: username too long\n");
+        free(utmp->u);
+        free(utmp->p);
+        free(utmp);
+        exit(EXIT_FAILURE);
+    }
+    utmp->u = eq + 1;
+    token = strtok(NULL, delim);
+    eq = strchr(token, '=');
+    if (strlen(eq) >= 32) {
+        fprintf(stderr, "POST data: username too long\n");
+        free(utmp->u);
+        free(utmp->p);
+        free(utmp);
+        exit(EXIT_FAILURE);
+    }
+    utmp->p = eq + 1;
+    return utmp;
+}
 
 // ##############
 // #  Manager
@@ -130,7 +152,7 @@ int storageGetHash(const char* s, const int users, const int attempt)
     return (hasha + (attempt * (hashb + 1))) % users;
 }
 
-uTable* createTable(void)
+uTable* createuTable(void)
 {
     uTable* ut = malloc(sizeof(uTable));
     if (ut == NULL) {
@@ -201,7 +223,7 @@ User* getUser(uTable* ut, const char* username)
 
 void dumpTable(uTable* ut)
 {
-    for (int i = 0; i < ut->capacity; ++i) {
+    for (size_t i = 0; i < ut->capacity; ++i) {
         User* cur = ut->users[i];
         if (cur != NULL) {
             printf("[%s]:%s -> %s\n", cur->username, cur->salt, cur->hash);

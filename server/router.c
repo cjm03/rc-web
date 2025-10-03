@@ -24,6 +24,7 @@
 #include "video.h"
 #include "hashtable.h"
 #include "utils.h"
+#include "users.h"
 #include "parse.h"
 #include "respheaders.h"
 #include "alccalc.h"
@@ -65,7 +66,7 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
+int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
 {
     int shouldI = 0;
     // Logic to obtain specific headers HERE!!!
@@ -322,7 +323,19 @@ int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
             return shouldI;
             
         } else if (strncmp(postresource, "/auth", 5) == 0) {
-            printf("%s\n", postresource);
+
+            utemp* creds = parseLogin(req->body);
+            printf("u: %s p: %s\n", creds->u, creds->p);
+            int ret = loginAsUser(ut, creds->u, creds->p);
+            if (ret != 1) {
+                fprintf(stderr, "login attempt user [%s] failure\n", creds->u);
+                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+                shouldI = 1;
+                return shouldI;
+            }
+            fprintf(stderr, "login attempt user [%s] SUCCESS!\n", creds->u);
+            char header[512] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\nSet-Login: logged-in\r\nConnection: keep-alive\r\n\r\n";
+            serveAnyFile(ssl, "public/temp.html", header);
             return shouldI;
         }
 

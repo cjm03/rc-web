@@ -26,6 +26,7 @@
 #include "hashtable.h"
 #include "parse.h"
 #include "utils.h"
+#include "users.h"
 
 #define PORT 8443
 #define BUFFER_SIZE 8192
@@ -41,8 +42,13 @@ int main(void)
     printf("Table: loaded\n");
 
     /* Initialize and load Users table */
-    // UsersTable* ut = createNewUsersTable();
-    // insertUser(ut, "crabby", "B0Jangle$", "cjmoye@iu.edu");
+    uTable* ut = createuTable();
+    int ret = loadStore(ut, "store.txt");
+    if (ret != 1) {
+        fprintf(stderr, "error: loadStore\n");
+        destroyTable(ut);
+        exit(EXIT_FAILURE);
+    }
 
     /* Initialize OpenSSL and SSL context */
     SSL_CTX* ctx = initSSLCTX();
@@ -136,7 +142,7 @@ int main(void)
             }
 
             /* Handle that thang */
-            if (handleRequest(t, ssl, req, clientip) != 0) {
+            if (handleRequest(t, ut, ssl, req, clientip) != 0) {
                 fprintf(stderr, "access [%s] denied\n", req->url);
                 SSL_shutdown(ssl);
                 SSL_free(ssl);

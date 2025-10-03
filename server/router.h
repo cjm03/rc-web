@@ -7,6 +7,7 @@
 
 #include "parse.h"
 #include "hashtable.h"
+#include "users.h"
 
 //=============================
 // json structure
@@ -36,6 +37,6 @@ JsonBuffer bufJson(Table* t);
  * Also takes in the table and client socket descriptor.
 */
 // void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
-int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
+int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip);
 
 #endif // ROUTER_H
