@@ -30,7 +30,7 @@ typedef struct Request {
 Header* getHeaderItem(Request* req, const char* header);
 
 /* same as above but returns just the header value */
-const char* getHeaderValue(Request* req, const char* header);
+char* getHeaderValue(Request* req, const char* header);
 
 //===========================================
 // The parser

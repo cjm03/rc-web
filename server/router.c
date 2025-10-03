@@ -66,11 +66,10 @@ JsonBuffer bufJson(Table* t)
 // Handler
 //==========================================================================================================
 
-int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
+int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip, char* buffer)
 {
     int shouldI = 0;
     // Logic to obtain specific headers HERE!!!
-    const char* range = getHeaderValue(req, "Range");
 
 
     //======================================================
@@ -105,7 +104,7 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
                 /* Good. Cleansing the data. Security. */
                 urldecode(clip_id, raw_id);
 
-                serveVideo(t, ssl, clip_id, range);
+                serveVideo(t, ssl, clip_id, buffer);
 
                 return shouldI;
             }
@@ -129,8 +128,8 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
                 char rawid[256];
                 sscanf(idparam + 3, "%255[^ \r\n]", rawid);
                 urldecode(clipid, rawid);
-                Item* i = getItem(t, clipid);
-                serveClipPage(ssl, clipid, i->size); // , t->items->);
+                // Item* i = getItem(t, clipid);
+                serveClipPage(ssl, clipid); // , t->items->);
                 return shouldI;
             }
 
@@ -241,6 +240,11 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
         } else if (strncmp(resource, "/private/gnome.jpeg", 19) == 0) {
 
             serveImage(ssl, "private/gnome.jpeg");
+            return shouldI;
+
+        } else if (strncmp(resource, "/private/thumbnails", 19) == 0) {
+
+            serveImage(ssl, resource + 1);
             return shouldI;
 
         } else {

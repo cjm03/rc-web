@@ -37,6 +37,6 @@ JsonBuffer bufJson(Table* t);
  * Also takes in the table and client socket descriptor.
 */
 // void handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip);
-int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip);
+int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip, char* buffer);
 
 #endif // ROUTER_H

@@ -34,7 +34,7 @@ Header* getHeaderItem(Request* req, const char* header)
     return NULL;
 }
 
-const char* getHeaderValue(Request* req, const char* header)
+char* getHeaderValue(Request* req, const char* header)
 {
     char* value = NULL;
     struct Header* cur = req->headers;

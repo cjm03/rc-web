@@ -36,6 +36,11 @@
                 font-size: 0.9em;
                 color: #aaa;
             }
+            .clip-thumbnail {
+                max-width: 100%;
+                border-radius: 4px;
+                margin-bottom: 8px;
+            }
             button {
                 margin-top: 0.5em;
                 padding: 0.4em 1em;
@@ -93,9 +98,15 @@
                         const div = document.createElement('div');
                         div.className = 'clip';
                         div.innerHTML = `
-                            <p><strong>${clip.id}</strong><br>${(clip.size / 1048576).toFixed(2)} MB</p>
+                            <a href="/media?id=${encodeURIComponent(clip.id)}" class="clip-link">
+                                <img src="/private/thumbnails/${clip.id}.jpg" alt="${clip.id} thumbnail" class="clip-thumbnail">
+                                <p><strong>${clip.id}</strong><br>${(clip.size / 1048576).toFixed(2)} MB</p>
+                            </a>
+                            <!-- <p><strong>${clip.id}</strong><br>${(clip.size / 1048576).toFixed(2)} MB</p> -->
                             <!-- <button onclick="window.location.href='/clip?id=${encodeURIComponent(clip.id)}'">View</button> -->
-                            <button><a href="/media?id=${encodeURIComponent(clip.id)}">View</a></button>
+                            <!-- <button><a href="/media?id=${encodeURIComponent(clip.id)}"> -->
+                            <!--     <img src="/private/thumbnails/${clip.id}.jpg" alt="${clip.id} thumbnail"> -->
+                            <!-- </a></button> -->
                             <!-- <button onclick="window.location.href='/media?id=${encodeURIComponent(clip.id)}'">View</button> -->
                         `;
                         grid.appendChild(div);
