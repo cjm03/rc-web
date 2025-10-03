@@ -5,10 +5,11 @@ CC=gcc
 SERVER=server/main.c server/router.c server/video.c server/hashtable.c server/utils.c server/parse.c server/prime.c server/alccalc.c #server/users.c
 LIBFLATE=server/libflate/flate.c
 LIBBCRYPT=-Iserver/libbcrypt -Lserver/libbcrypt -l:bcrypt.a
+ARGON=server/libargon2/libargon2.a -Isrc
 # IPDB=-I/usr/local/include -L/usr/local/lib -lIP2Location ipdb/locate.c
 CFLAGS=-g -O0 -lm -lssl -lcrypto -D_DEFAULT_SOURCE -Wall -Wextra -pedantic -std=c99
 rcw:
-	$(CC) $(SERVER) $(LIBFLATE) $(LIBBCRYPT) $(CFLAGS) -o rcw
+	$(CC) $(SERVER) $(LIBFLATE) $(LIBBCRYPT) $(ARGON) $(CFLAGS) -o rcw
 	# $(CC) $(SERVER) $(LIBFLATE) $(LIBBCRYPT) $(IPDB) $(CFLAGS) -o rcw
 #
 # clean: rm -f rcw

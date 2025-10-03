@@ -85,13 +85,13 @@ int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
             /* Here, were stripping the first three characters (id=) from the URI because their filenames lack them */
             const char* idparam = strstr(resource, "id=");
 
-            char* idcheck = htSearch(t, idparam + 3);
-            if (idcheck != idparam) {
-                fprintf(stderr, "clip not found");
-                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-                shouldI = 1;
-                return shouldI;
-            }
+            // char* idcheck = htSearch(t, idparam + 3);
+            // if (idcheck != idparam) {
+            //     fprintf(stderr, "clip not found");
+            //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            //     shouldI = 1;
+            //     return shouldI;
+            // }
 
             if (idparam) {
 
@@ -115,13 +115,13 @@ int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
             const char* idparam = strstr(resource, "id=");
 
-            char* idcheck = htSearch(t, idparam + 3);
-            if (idcheck != idparam) {
-                fprintf(stderr, "clip not found");
-                SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
-                shouldI = 1;
-                return shouldI;
-            }
+            // char* idcheck = htSearch(t, idparam + 3);
+            // if (idcheck != idparam) {
+            //     fprintf(stderr, "clip not found");
+            //     SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
+            //     shouldI = 1;
+            //     return shouldI;
+            // }
 
             if (idparam) {
                 char clipid[256];
@@ -180,6 +180,11 @@ int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
 
             }
 
+            return shouldI;
+
+        } else if (strncmp(resource, "/public/login.html", 18) == 0) {
+
+            serveFile(ssl, "public/login.html");
             return shouldI;
 
         } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
@@ -315,7 +320,12 @@ int handleRequest(Table* t, SSL* ssl, struct Request* req, char* ip)
             free(buf);
 
             return shouldI;
+            
+        } else if (strncmp(postresource, "/auth", 5) == 0) {
+            printf("%s\n", postresource);
+            return shouldI;
         }
+
     } else {
 
         printf("%s %s ", "error:", req->url);

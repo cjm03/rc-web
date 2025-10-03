@@ -1,63 +1,118 @@
 #ifndef USERS_H
 #define USERS_H
 
-#include <unistd.h>
-#include <crypt.h>
-#include <time.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "libargon2/argon2.h"
 
-#define USERS_TABLE_SIZE 32
+#define MAXUSERS 128
+#define HT_PRIME1 151
+#define HT_PRIME2 163
 #define HASHLEN 32
 #define SALTLEN 16
-#define ENCODEDLEN 128
-#define MAXUSERNAME 32
-#define MAXEMAIL 32
+#define ENCODEDLEN 108
+
 
 /////////////////////////////////////////////////
 // Structures
 /////////////////////////////////////////////////
 
+/* 
+ * a single User
+ * @param username: a char pointer storing username
+ * @param salt: a uint8_t pointer storing the salt
+ * @param hash: a uint8_t pointer storing the hash
+*/
 typedef struct User {
     char* username;
-    char* email;
-    uint8_t* hash;
     uint8_t* salt;
-    // char hash[HASHLEN];
-    // char salt[SALTLEN]
+    char* hash;
 } User;
 
-typedef struct UsersTable {
-    int size;
-    int count;
-    User* users;
-} UsersTable;
+/*
+ * a table of Users
+ * @param capacity: maximum amount of Users
+ * @param count: amount of Users currently populated
+ * @param users: an array of User pointers
+*/
+typedef struct uTable {
+    size_t capacity;
+    size_t count;
+    User** users;
+} uTable;
 
 /////////////////////////////////////////////////
-// Functions
+// Functions - Manager
 /////////////////////////////////////////////////
 
-/* Table */
-UsersTable* createNewUsersTable(void);
-UsersTable* createNewUsersTableSized(const int size);
+int uGenSalt(uint8_t* buffer, int bytes);
+void encodedHashArgon(char* password, char* encoded, uint8_t* salt);
+int loadStore(uTable* ut, const char* filepath);
+void storeNewUser(uTable* ut, const char* filename, char* username, char* password);
+int loginAsUser(uTable* ut, char* username, char* password);
 
-/* User */
-void createInsertPopulateUser(UsersTable* ut, const char* username, const char* password, const char* email);
-User* createEmptyUser(void);
+/////////////////////////////////////////////////
+// Functions - Storage
+/////////////////////////////////////////////////
 
-User* userSearch(UsersTable* ut, const char* username);
+/*
+ * calculate the hash
+ * @param s: the value to find the hash of (username)
+ * @param a: prime number
+ * @param m: modulo
+*/
+int storageHash(const char* s, const int a, const int m);
 
-/* Get rid of shit */
-void freeUser(User* u);
-void freeUsersTable(UsersTable* ut);
+/*
+ * calculate the hash with attempts factored in (collision resistance)
+ * @param s: the value to find the hash of (username)
+ * @param users: modulo, amount of users
+ * @param attempt: attempt counter
+*/
+int storageGetHash(const char* s, const int users, const int attempt);
 
-/* print */
-void printUser(UsersTable* ut, const char* username);
+/*
+ * create the table storing users
+ * generates MAXUSERS Users
+*/
+uTable* createTable(void);
 
-/* Crypto-shit */
-int verifyPasswordHash(const char* password, const char* hashedPassword);
-uint8_t* privateGeneration();
-void testArgon2(uint32_t version, uint32_t t, uint32_t m, uint32_t p, char* pwd,
-                char* salt, char* hexref, char* mcfref, argon2_type type);
+/*
+ * create a User
+ * @param username: username to be stored
+ * @param salt: salt used for hashing (optional)
+ * @param hash: storage for the hashed password
+*/
+User* createUser(char* username, uint8_t* salt, char* hash);
+
+/*
+ * create and insert a user into a table
+ * @param ut: the table to insert into
+ * @param username: username of the new user to be inserted
+ * @param salt: salt used for hashing (optional)
+ * @param hash: the hashed password value
+*/
+void insertUser(uTable* ut, char* username, uint8_t* salt, char* hash);
+
+/*
+ * iterate through a table to find a user via username
+ * @param ut: the table to look through
+ * @param username: the username to be searched for
+*/
+User* getUser(uTable* ut, const char* username);
+
+/*
+ * output the contents of a user table
+ * @param ut: the table to be printed
+*/
+void dumpTable(uTable* ut);
+
+// recursively free the users, then free the table
+void destroyTable(uTable* ut);
+
+// free a user
+void destroyUser(User* u);
+
 
 #endif // USERS_H
