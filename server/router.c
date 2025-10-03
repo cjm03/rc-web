@@ -150,6 +150,16 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
             serveFile(ssl, "public/css/bootstrap.css.map");
             return  0; 
 
+        } else if (strncmp(resource, "/public/main.js", 15) == 0) {
+
+            serveFile(ssl, "public/forum/main.js");
+            return shouldI;
+
+        } else if (strncmp(resource, "/public/style.css", 15) == 0) {
+
+            serveFile(ssl, "public/forum/style.css");
+            return shouldI;
+
         } else if (strncmp(resource, "/clipindex.html", 15) == 0) {
 
             serveAnyFile(ssl, "public/clipindex.html", TXT_OK);
@@ -191,6 +201,21 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
         } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
 
             serveFile(ssl, "public/alccalc.html");
+            return shouldI;
+
+        } else if (strncmp(resource, "/public/forums.html", 19) == 0) {
+
+            serveFile(ssl, "public/forum/forums.html");
+            return shouldI;
+
+        } else if (strncmp(resource, "/public/posts.html", 19) == 0) {
+
+            serveFile(ssl, "public/forum/posts.html");
+            return shouldI;
+
+        } else if (strncmp(resource, "/public/detail.html", 19) == 0) {
+
+            serveFile(ssl, "public/forum/detail.html");
             return shouldI;
 
         } else if (strncmp(resource, "/public/favicon.png", 19) == 0) {
@@ -334,7 +359,14 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip)
                 return shouldI;
             }
             fprintf(stderr, "login attempt user [%s] SUCCESS!\n", creds->u);
-            char header[512] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\nSet-Login: logged-in\r\nConnection: keep-alive\r\n\r\n";
+            char header[512];
+            snprintf(header, sizeof(header),
+                     "HTTP/1.1 200 OK\r\n"
+                     "Content-Type: text/html\r\n"
+                     "Content-Length: %ld\r\n"
+                     "Set-Login: logged-in\r\n"
+                     "Set-Cookie: user=%s; SameSite=Strict\r\n"
+                     "Connection: keep-alive\r\n\r\n", (long)209, creds->u);
             serveAnyFile(ssl, "public/temp.html", header);
             return shouldI;
         }
