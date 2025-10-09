@@ -5,6 +5,7 @@
 */
 
 #include <asm-generic/socket.h>
+#include <openssl/bio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,8 +34,31 @@
 #define CERTFILE "ssl/server.crt"
 #define KEYFILE "ssl/server.key"
 
+static void vwarnx(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+    putc('\n', stderr);
+}
+static void errx(int status, const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vwarnx(fmt, ap);
+    va_end(ap);
+    exit(status);
+}
+static void warnx(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vwarnx(fmt, ap);
+    va_end(ap);
+}
+
 int main(void)
 {
+    int res = EXIT_FAILURE;
+    const char* hostport = "8443";
 
     /* Initialize and fill hash table */
     Table* t = createTable();
@@ -54,122 +78,75 @@ int main(void)
     SSL_CTX* ctx = initSSLCTX();
     loadCerts(ctx, CERTFILE, KEYFILE);
 
-    /* Server essentials */
-    struct sockaddr_in addr, cliaddr;
-    socklen_t clilen = sizeof(cliaddr);
-    const int enable = 1;
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
 
-    /* Create socket */
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-        perror("socket");
-        exit(EXIT_FAILURE);
+    // Create listener socket wrapped in a BIO
+    BIO* acceptor_bio = BIO_new_accept(hostport);
+    if (acceptor_bio == NULL) {
+        SSL_CTX_free(ctx);
+        ERR_print_errors_fp(stderr);
+        errx(res, "error: acceptor bio creation");
+    }
+    BIO_set_bind_mode(acceptor_bio, BIO_BIND_REUSEADDR);
+    if (BIO_do_accept(acceptor_bio) <= 0) {
+        SSL_CTX_free(ctx);
+        ERR_print_errors_fp(stderr);
+        errx(res, "error: acceptor socket setup");
     }
 
-    /* Socket options */
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) perror("setsockopt REUSEADDR");
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) perror("setsockopt REUSEPORT");
+    while(1) {
 
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(PORT);
+        BIO* clientbio;
+        SSL* ssl;
 
-    if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
-        perror("bind");
-        exit(EXIT_FAILURE);
-    }
+        ERR_clear_error();
 
-    if (listen(server_fd, 10) != 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Server: success [%d]\n", PORT);
-
-
-    /* Deal with client connections to server */
-    while (1) {
-
-        /* Accept */
-        int client_fd = accept(server_fd, (struct sockaddr*)&cliaddr, &clilen);
-        if (client_fd < 0) {
-            perror("accept");
+        if (BIO_do_accept(acceptor_bio) <= 0) {
             continue;
         }
 
-        /* LOG */
-        char clientip[INET_ADDRSTRLEN];                                                    // STORE IP
-        inet_ntop(AF_INET, &cliaddr.sin_addr, clientip, INET_ADDRSTRLEN);                  // CONVERT IP
-        logIP("Connection from %s:%d\n", clientip, ntohs(cliaddr.sin_port));               // laugh
+        clientbio = BIO_pop(acceptor_bio);
+        fprintf(stderr, "New connection accepted\n");
 
-        /* Concurrency */
-        if (fork() == 0) {
-
-            close(server_fd);
-
-            /* Gen cert */
-            SSL* ssl = SSL_new(ctx);
-            if (!ssl) {
-                fprintf(stderr, "SSL_new: failure\n");
-                close(client_fd);
-                exit(EXIT_FAILURE);
-            }
-
-            SSL_set_fd(ssl, client_fd);     // ssl's sissy la la filedes
-
-            /* Attempt cert accept */
-            if (SSL_accept(ssl) <= 0) {
-                // ERR_print_errors_fp(stderr);
-                SSL_free(ssl);
-                close(client_fd);
-                exit(1);
-            }
-
-
-            // printf("\nGET DOWN -> %s\t", clientip);
-            int reqlen = 0;
-            char* buffer = readFullRequest(ssl, &reqlen);
-
-            /* Parse the request and store in Request structure req */
-            // printf("%s\n", buffer);
-            struct Request* req = parseRequest(buffer);
-            if (!req) {
-                fprintf(stderr, "parser: fail\n");
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                close(client_fd);
-                exit(EXIT_FAILURE);
-            }
-
-            /* Handle that thang */
-            if (handleRequest(t, ut, ssl, req, clientip, buffer) != 0) {
-                fprintf(stderr, "access [%s] denied\n", req->url);
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                close(client_fd);
-                exit(0);
-            } else {
-
-                printf("sent [%s]\n", req->url);
-
-                /* Free the request */
-                freeRequest(req);
-
-                /* Shutdown SSL, free SSL, close clientfd */
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                close(client_fd);
-
-                exit(0);
-
-            }
-
-        } else {
-
-            close(client_fd);
-
+        if ((ssl = SSL_new(ctx)) == NULL) {
+            ERR_print_errors_fp(stderr);
+            warnx("error: ssl handle creation for new connection");
+            BIO_free(clientbio);
+            continue;
         }
+        SSL_set_bio(ssl, clientbio, clientbio);
+
+        if (SSL_accept(ssl) <= 0) {
+            ERR_print_errors_fp(stderr);
+            warnx("error: ssl handshake");
+            SSL_free(ssl);
+            continue;
+        }
+
+        int reqlen = 0;
+        char* buf = readFullRequest(ssl, &reqlen);
+        struct Request* req = parseRequest(buf);
+        if (!req) {
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            errx(res, "error: parser failure");
+        }
+        if (handleRequest(t, ut, ssl, req, "0.0.0.0", buf) != 0) {
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            errx(res, "error: access [%s] denied", req->url);
+        } else {
+            fprintf(stderr, "sent [%s]\n", req->url);
+            freeRequest(req);
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            // exit(0);
+        }
+
     }
+
+
+    /* Deal with client connections to server */
 
     /* Clean */
     freeTable(t);

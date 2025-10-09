@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+    <head>
+
+        <meta charset='UTF-8'>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Create New Forum</title>
+        <link rel="stylesheet" href="/public/css/bootstrap.css">
+        <link rel="icon" type="image/png" href="public/favicon.png">
+
+        <style>
+            body {
+                background: #121212;
+                color: #fff;
+            }
+            main {
+                background: #121212;
+            }
+            div {
+                background: #121212;
+                color: #fff;
+            }
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+            .subforum {
+                margin-top: 20px;
+            }
+            .subforum-title {
+                background-color: #212121;
+                padding: 5px;
+                border-radius: 5px;
+                margin: 4px;
+            }
+            .subforum-row {
+                display: grid;
+                grid-template-columns: 7% 60% 13% 20%;
+            }
+            .subforum-column {
+                padding: 10px;
+                margin: 4px;
+                border-radius: 5px;
+                background-color: #121212;
+            }
+            .subforum-description *{
+                margin-block: 0;
+            }
+        </style>
+
+    </head>
+
+    <body>
+
+        <header>
+            <nav class="navbar navbar-expand bg-dark border-bottom border-primary" data-bs-theme="dark" style="padding-top: 0px; padding-bottom: 0px;">
+                <div class="container-fluid lh-0 py-3 mb-0">
+                    <a class="navbar-brand" href="/">stealthywombat.tech</a>
+                    <ul class="navbar-nav mb-0">
+                        <li class="nav-item">
+                            <form class="container-fluid">
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/clipindex.html">clips</a>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/public/alccalc.html">kro-alc</a>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button">
+                                    <a class="nav-link" href="/public/login.html">Login</a>
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                    <!-- <form class="d-flex" role="search"> -->
+                    <!--     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/> -->
+                    <!--     <button class="btn btn-outline-primary" disabled>Search</button> -->
+                    <!-- </form> -->
+                </div>
+            </nav>
+        </header>
+
+        <h2>Discount Calculation</h2>
+        <table class="table table-dark table-bordered" style="width: 25%"> <!--border="1"--> 
+            <tr>
+                <th style="width: 10%;">#</th>
+                <th style="width: 30%;">Original</th>
+                <th style="width: 30%;" class="table-success">New Price</th>
+                <th style="width: 30%;" class="table-info">Discount</th>
+            </tr>
+            <!-- #BEGINTABLE disc -->
+            <tr>
+                <th>##indexnum##</th>
+                <th>##original##</th>
+                <th class="table-success">##new##</th>
+                <th class="table-info">##discount##</th>
+            </tr>
+            <!-- #ENDTABLE disc -->
+            <tr>
+                <th>Totals</th>
+                <th>$##totalorig##</th>
+                <th class="table-success">$##totalcost##</th>
+                <th>$##totaldisc##</th>
+            </tr>
+        </table>
+        <h3>Before Discount: $##totalorig##</h3>
+        <h3>Total Discount: -$##totaldisc##</h3>
+        <div class="border-bottom"></div>
+        <h3>After Discount : $##totalcost##</h3>
+    </body>
+
+</html>

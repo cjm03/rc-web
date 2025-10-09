@@ -88,15 +88,21 @@ void logIP(const char* format, ...)
 SSL_CTX* initSSLCTX(void)
 {
     SSL_library_init();
-    // OpenSSL_add_all_algorithms();
     OpenSSL_add_ssl_algorithms();
     SSL_load_error_strings();
+
     const SSL_METHOD* method = TLS_server_method();
     SSL_CTX* ctx = SSL_CTX_new(method);
     if (!ctx) {
         ERR_print_errors_fp(stderr);
         abort();
     }
+
+    uint64_t opts = SSL_OP_IGNORE_UNEXPECTED_EOF;
+    opts |= SSL_OP_NO_RENEGOTIATION;
+    opts |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+    SSL_CTX_set_options(ctx, opts);
+
     return ctx;
 }
 

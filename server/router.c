@@ -207,15 +207,15 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
             serveFile(ssl, "public/forum/forums.html");
             return shouldI;
 
-        } else if (strncmp(resource, "/public/posts.html", 19) == 0) {
-
-            serveFile(ssl, "public/forum/posts.html");
-            return shouldI;
-
-        } else if (strncmp(resource, "/public/detail.html", 19) == 0) {
-
-            serveFile(ssl, "public/forum/detail.html");
-            return shouldI;
+        // } else if (strncmp(resource, "/public/posts.html", 19) == 0) {
+        //
+        //     serveFile(ssl, "public/forum/posts.html");
+        //     return shouldI;
+        //
+        // } else if (strncmp(resource, "/public/detail.html", 19) == 0) {
+        //
+        //     serveFile(ssl, "public/forum/detail.html");
+        //     return shouldI;
 
         } else if (strncmp(resource, "/public/favicon.png", 19) == 0) {
 
