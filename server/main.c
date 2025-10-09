@@ -6,6 +6,9 @@
 
 #include <asm-generic/socket.h>
 #include <openssl/bio.h>
+#include <openssl/quic.h>
+#include <openssl/tls1.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,7 +61,7 @@ static void warnx(const char* fmt, ...)
 int main(void)
 {
     int res = EXIT_FAILURE;
-    const char* hostport = "8443";
+    BIO* acceptor_bio;
 
     /* Initialize and fill hash table */
     Table* t = createTable();
@@ -67,92 +70,83 @@ int main(void)
 
     /* Initialize and load Users table */
     uTable* ut = createuTable();
-    int ret = loadStore(ut, "store.txt");
-    if (ret != 1) {
+    int tret = loadStore(ut, "store.txt");
+    if (tret != 1) {
         fprintf(stderr, "error: loadStore\n");
         destroyTable(ut);
         exit(EXIT_FAILURE);
     }
-
-    /* Initialize OpenSSL and SSL context */
     SSL_CTX* ctx = initSSLCTX();
     loadCerts(ctx, CERTFILE, KEYFILE);
 
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
-
-    // Create listener socket wrapped in a BIO
-    BIO* acceptor_bio = BIO_new_accept(hostport);
+    /* Initialize OpenSSL and SSL context */
+    acceptor_bio = BIO_new_accept("8443");
     if (acceptor_bio == NULL) {
         SSL_CTX_free(ctx);
         ERR_print_errors_fp(stderr);
-        errx(res, "error: acceptor bio creation");
+        errx(res, "failed to create acceptor bio");
     }
+
     BIO_set_bind_mode(acceptor_bio, BIO_BIND_REUSEADDR);
     if (BIO_do_accept(acceptor_bio) <= 0) {
         SSL_CTX_free(ctx);
         ERR_print_errors_fp(stderr);
-        errx(res, "error: acceptor socket setup");
+        errx(res, "error: socket setup");
     }
 
-    while(1) {
-
+    while (1) {
         BIO* clientbio;
         SSL* ssl;
 
         ERR_clear_error();
 
-        if (BIO_do_accept(acceptor_bio) <= 0) {
-            continue;
-        }
+        if (BIO_do_accept(acceptor_bio) <= 0) continue;
 
         clientbio = BIO_pop(acceptor_bio);
-        fprintf(stderr, "New connection accepted\n");
+        printf("Accepted new connection\n");
 
-        if ((ssl = SSL_new(ctx)) == NULL) {
-            ERR_print_errors_fp(stderr);
-            warnx("error: ssl handle creation for new connection");
-            BIO_free(clientbio);
-            continue;
-        }
-        SSL_set_bio(ssl, clientbio, clientbio);
+        if (fork() == 0) {
 
-        if (SSL_accept(ssl) <= 0) {
-            ERR_print_errors_fp(stderr);
-            warnx("error: ssl handshake");
-            SSL_free(ssl);
-            continue;
+            if ((ssl = SSL_new(ctx)) == NULL) {
+                ERR_print_errors_fp(stderr);
+                warnx("error creating SSL handle for new connection");
+                BIO_free(clientbio);
+                continue;
+            }
+            SSL_set_bio(ssl, clientbio, clientbio);
+            if (SSL_accept(ssl) <= 0) {
+                ERR_print_errors_fp(stderr);
+                warnx("error performing SSL handshake");
+                SSL_free(ssl);
+                continue;
+            }
+            int reqlen = 0;
+            char* buffer = readFullRequest(ssl, &reqlen);
+            struct Request* req = parseRequest(buffer);
+            if (!req) {
+                fprintf(stderr, "parser fail\n");
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                exit(EXIT_FAILURE);
+            }
+            if (handleRequest(t, ut, ssl, req, "0.0.0.0", buffer) != 0) {
+                fprintf(stderr, "access [%s] denied\n", req->url);
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                exit(0);
+            } else {
+                printf("sent [%s]\n", req->url);
+                freeRequest(req);
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                exit(0);
+            }
         }
-
-        int reqlen = 0;
-        char* buf = readFullRequest(ssl, &reqlen);
-        struct Request* req = parseRequest(buf);
-        if (!req) {
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            errx(res, "error: parser failure");
-        }
-        if (handleRequest(t, ut, ssl, req, "0.0.0.0", buf) != 0) {
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            errx(res, "error: access [%s] denied", req->url);
-        } else {
-            fprintf(stderr, "sent [%s]\n", req->url);
-            freeRequest(req);
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            // exit(0);
-        }
-
     }
-
-
-    /* Deal with client connections to server */
-
     /* Clean */
     freeTable(t);
     destroyTable(ut);
     SSL_CTX_free(ctx);
-
     return 0;
 }
 
