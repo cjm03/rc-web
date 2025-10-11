@@ -197,6 +197,11 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
             serveFile(ssl, "public/login.html");
             return shouldI;
 
+        } else if (strncmp(resource, "/public/signup.html", 19) == 0) {
+
+            serveFile(ssl, "public/signup.html");
+            return shouldI;
+
         } else if (strncmp(resource, "/public/alccalc.html", 20) == 0) {
 
             serveFile(ssl, "public/alccalc.html");
@@ -332,7 +337,7 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
             /* free flate and discount table */
             flateFreeMem(f);
             freeDiscountTable(t);
-            
+
             /* header shit */
             size_t len = strlen(buf);
             char header[512];
@@ -350,7 +355,7 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
             free(buf);
 
             return shouldI;
-            
+
         } else if (strncmp(postresource, "/auth", 5) == 0) {
 
             utemp* creds = parseLogin(req->body);
@@ -358,6 +363,7 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
             int ret = loginAsUser(ut, creds->u, creds->p);
             if (ret != 1) {
                 fprintf(stderr, "login attempt user [%s] failure\n", creds->u);
+                free(creds);
                 SSL_write(ssl, NOT_FOUND, strlen(NOT_FOUND));
                 shouldI = 1;
                 return shouldI;
@@ -372,6 +378,21 @@ int handleRequest(Table* t, uTable* ut, SSL* ssl, struct Request* req, char* ip,
                      "Set-Cookie: user=%s; SameSite=Strict\r\n"
                      "Connection: keep-alive\r\n\r\n", (long)209, creds->u);
             serveAnyFile(ssl, "public/temp.html", header);
+            free(creds);
+            return shouldI;
+
+        } else if (strncmp(postresource, "/signup", 7) == 0) {
+
+            utemp* creds = parseLogin(req->body);
+            char* user = strdup(creds->u);
+            char* pass = strdup(creds->p);
+            printf("NEW USER: %s %s\n", user, pass);
+            storeNewUser(ut, "store.txt", user, pass);
+            free(creds);
+            free(user);
+            free(pass);
+            dumpTable(ut);
+            serveFile(ssl, "public/temp2.html");
             return shouldI;
         }
 

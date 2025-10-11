@@ -25,6 +25,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <pthread.h>
 
 #include "router.h"
 #include "hashtable.h"
@@ -56,6 +57,65 @@ static void warnx(const char* fmt, ...)
     va_start(ap, fmt);
     vwarnx(fmt, ap);
     va_end(ap);
+}
+
+void* handleClient(void* arg)
+{
+    SSL_CTX* ctx = (SSL_CTX*)arg;
+    BIO* clientbio = NULL;
+    SSL* ssl = NULL;
+
+    BIO* acceptor_bio = BIO_new_accept("8443");
+    if (BIO_do_accept(acceptor_bio) <= 0) {
+        SSL_CTX_free(ctx);
+        ERR_print_errors_fp(stderr);
+        pthread_exit(NULL);
+    }
+    clientbio = BIO_pop(acceptor_bio);
+
+    if ((ssl = SSL_new(ctx)) == NULL) {
+        ERR_print_errors_fp(stderr);
+        warnx("error creating SSL handle for new connection");
+        BIO_free(clientbio);
+        BIO_free(acceptor_bio);
+        pthread_exit(NULL);
+    }
+    SSL_set_bio(ssl, clientbio, clientbio);
+    if (SSL_accept(ssl) <= 0) {
+        ERR_print_errors_fp(stderr);
+        warnx("error performing SSL handshake");
+        SSL_free(ssl);
+        BIO_free(acceptor_bio);
+        pthread_exit(NULL);
+    }
+    int reqlen = 0;
+    char* buffer = readFullRequest(ssl, &reqlen);
+    struct Request* req = parseRequest(buffer);
+    if (!req) {
+        fprintf(stderr, "parser fail\n");
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        BIO_free(acceptor_bio);
+        free(buffer);
+        pthread_exit(NULL);
+    }
+
+    pthread_mutex_lock(&ut_mutex);
+    int result = handleRequest(t, ut, ssl, req, "0.0.0.0", buffer);
+    pthread_mutex_unlock(&ut_mutex);
+    if (result != 0) {
+        fprintf(stderr, "access [%s] denied\n", req->url);
+    } else {
+        printf("sent [%s]\n", req->url);
+    }
+
+    freeRequest(req);
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+    BIO_free(acceptor_bio);
+    free(buffer);
+
+    pthread_exit(NULL);
 }
 
 int main(void)

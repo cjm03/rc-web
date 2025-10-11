@@ -86,7 +86,6 @@ int loadStore(uTable* ut, const char* filepath)
         fprintf(stderr, "loadStore: %s not accessed\n", filepath);
         return -1;
     }
-    uint8_t nasalt[4] = "N/A";
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -97,7 +96,8 @@ int loadStore(uTable* ut, const char* filepath)
         user = strtok(line, delim);
         rawhash = strtok(NULL, delim);
         rawhash[strlen(rawhash) - 1] = '\0';
-        insertUser(ut, user, nasalt, rawhash);
+        printf("[%s] -> [%s]\n", user, rawhash);
+        insertUser(ut, user, rawhash);
     }
     fclose(f);
     dumpTable(ut);
@@ -111,7 +111,7 @@ void storeNewUser(uTable* ut, const char* filename, char* username, char* passwo
     uGenSalt(salt, SALTLEN);
     char encoded[ENCODEDLEN];
     encodedHashArgon(password, encoded, salt);
-    insertUser(ut, username, salt, encoded);
+    insertUser(ut, username, encoded);
     fprintf(f, "%s->%s\n", username, encoded);
     fclose(f);
 }
@@ -170,7 +170,7 @@ uTable* createuTable(void)
     return ut;
 }
 
-User* createUser(char* username, uint8_t* salt, char* hash)
+User* createUser(char* username, char* hash)
 {
     User* u = malloc(sizeof(User));
     if (u == NULL) {
@@ -178,16 +178,14 @@ User* createUser(char* username, uint8_t* salt, char* hash)
         return NULL;
     }
     u->username = strdup(username);
-    u->salt = malloc(sizeof(uint8_t) * SALTLEN);
     u->hash = malloc(sizeof(char) * ENCODEDLEN);
-    memcpy(u->salt, salt, SALTLEN);
     memcpy(u->hash, hash, ENCODEDLEN);
     return u;
 }
 
-void insertUser(uTable* ut, char* username, uint8_t* salt, char* hash)
+void insertUser(uTable* ut, char* username, char* hash)
 {
-    User* new = createUser(username, salt, hash);
+    User* new = createUser(username, hash);
     int index = storageGetHash(new->username, ut->capacity, 0);
     User* cur = ut->users[index];
     int i = 1;
@@ -226,7 +224,7 @@ void dumpTable(uTable* ut)
     for (size_t i = 0; i < ut->capacity; ++i) {
         User* cur = ut->users[i];
         if (cur != NULL) {
-            printf("[%s]:%s -> %s\n", cur->username, cur->salt, cur->hash);
+            printf("[%s] -> [%s]\n", cur->username, cur->hash);
         }
     }
 }
@@ -246,7 +244,6 @@ void destroyTable(uTable* ut)
 void destroyUser(User* u)
 {
     free(u->username);
-    free(u->salt);
     free(u->hash);
     free(u);
 }

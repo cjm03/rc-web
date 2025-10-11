@@ -35,7 +35,6 @@ utemp* parseLogin(char* toparse);
 */
 typedef struct User {
     char* username;
-    uint8_t* salt;
     char* hash;
 } User;
 
@@ -93,7 +92,7 @@ uTable* createuTable(void);
  * @param salt: salt used for hashing (optional)
  * @param hash: storage for the hashed password
 */
-User* createUser(char* username, uint8_t* salt, char* hash);
+User* createUser(char* username, char* hash);
 
 /*
  * create and insert a user into a table
@@ -102,7 +101,7 @@ User* createUser(char* username, uint8_t* salt, char* hash);
  * @param salt: salt used for hashing (optional)
  * @param hash: the hashed password value
 */
-void insertUser(uTable* ut, char* username, uint8_t* salt, char* hash);
+void insertUser(uTable* ut, char* username, char* hash);
 
 /*
  * iterate through a table to find a user via username
